@@ -1,0 +1,1 @@
+import { fetchLatestBaileysVersion } from "baileys";
