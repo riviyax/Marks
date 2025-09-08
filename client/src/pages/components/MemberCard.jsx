@@ -9,7 +9,7 @@ function MemberCard({ member }) {
   const onDeleteConfirmed = async () => {
     try {
       setDeleting(true);
-      await axios.delete(`http://localhost:3000/api/members/${member._id}`);
+      await axios.delete(`https://marks.vercel.app/api/members/${member._id}`);
       // simple approach: reload to refresh list (you can replace with a callback later)
       window.location.reload();
     } catch (err) {

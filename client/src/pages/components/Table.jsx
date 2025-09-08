@@ -9,7 +9,7 @@ function Table() {
 
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/members")
+      .get("https://marks.vercel.app/api/members")
       .then((res) => {
         setMembers(res.data);
       })
@@ -92,7 +92,7 @@ function Table() {
                       onClick={async () => {
                         if (confirm(`Delete ${m.name}?`)) {
                           try {
-                            await axios.delete(`http://localhost:3000/api/members/${m._id}`);
+                            await axios.delete(`https://marks.vercel.app/api/members/${m._id}`);
                             window.location.reload();
                           } catch (err) {
                             console.error(err);

@@ -27,7 +27,7 @@ function Main() {
       alert("✅ Last update date changed!");
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to update last update date.");
+      alert("❌ Failed to update last update date." + err.message);
     }
   };
 

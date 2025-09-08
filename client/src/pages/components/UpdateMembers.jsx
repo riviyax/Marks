@@ -36,7 +36,7 @@ function EditMembers({ member }) {
     };
 
     axios
-      .put(`http://localhost:3000/api/members/${memberData.id}`, payload)
+      .put(`https://marks.vercel.app/api/members/${memberData.id}`, payload)
       .then((response) => {
         dialogRef.current?.close();
         window.location.reload();
