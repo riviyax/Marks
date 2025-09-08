@@ -1,9 +1,8 @@
 const express = require("express");
 const dbConnection = require("./config/db");
-const router = require("./routes/members");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-
+const router = require("./routes/members");
 const LastUpdate = require("./models/LastUpdate");
 
 const app = express();
@@ -16,16 +15,18 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Connect to MongoDB
 dbConnection();
 
-// ========== ROUTES ==========
+// ========================
+// ROUTES
+// ========================
 
 // GET last update from MongoDB
 app.get("/api/last-update", async (req, res) => {
   try {
     let doc = await LastUpdate.findOne();
 
-    // If not exists, create with current date
     if (!doc) {
-      doc = await LastUpdate.create({});
+      // If not exists, create it with current date
+      doc = await LastUpdate.create({ lastUpdated: new Date() });
     }
 
     res.json({ lastUpdated: doc.lastUpdated });
@@ -39,23 +40,21 @@ app.get("/api/last-update", async (req, res) => {
 app.post("/api/last-update", async (req, res) => {
   try {
     const customDate = req.body.date;
+    const newDate = customDate ? new Date(customDate) : new Date();
 
-    let newDate = new Date();
-    if (customDate) {
-      const parsed = new Date(customDate);
-      if (isNaN(parsed.getTime())) {
-        return res.status(400).json({ error: "Invalid date format" });
-      }
-      newDate = parsed;
+    if (isNaN(newDate.getTime())) {
+      return res.status(400).json({ error: "Invalid date format" });
     }
 
     let doc = await LastUpdate.findOne();
+
     if (!doc) {
-      doc = await LastUpdate.create({ lastUpdated: newDate });
+      doc = new LastUpdate({ lastUpdated: newDate });
     } else {
       doc.lastUpdated = newDate;
-      await doc.save();
     }
+
+    await doc.save();
 
     res.json({ lastUpdated: doc.lastUpdated });
   } catch (err) {
@@ -64,17 +63,20 @@ app.post("/api/last-update", async (req, res) => {
   }
 });
 
-// Main homepage
+// Default homepage route
 app.get("/", (req, res) => {
-  res.send(
-    '<h1>Hello World!</h1><br>v2 This is the server side website for the Members API<br><a href="">Go To Main Site</a><br><a target="_blank" href="https://ggriviya.pages.dev">Go To Developer Page</a>'
-  );
+  res.send(`
+    <h1>Hello World!</h1>
+    <br>This is the server side website for the Members API
+    <br><a href="">Go To Main Site</a>
+    <br><a target="_blank" href="https://ggriviya.pages.dev">Go To Developer Page</a>
+  `);
 });
 
 // Member routes
 app.use("/api/members", router);
 
-// Start server
+// Start the server
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server is running on https://marks.vercel.app/`);
