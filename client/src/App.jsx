@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import Login from "./pages/login";
+import Login from "./pages/Login";
 import Main from "./pages/Main";
 
 function App() {
