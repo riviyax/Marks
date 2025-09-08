@@ -11,7 +11,7 @@ function Main() {
   // Fetch last update from backend
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/last-update")
+      .get("https://marks.vercel.app/api/last-update")
       .then((res) => setLastUpdate(res.data.lastUpdated))
       .catch((err) => console.error("Error fetching last update:", err));
   }, []);
@@ -19,7 +19,7 @@ function Main() {
   // Handle manual update
   const handleUpdateDate = async () => {
     try {
-      const res = await axios.post("http://localhost:3000/api/last-update", {
+      const res = await axios.post("https://marks.vercel.app/api/last-update", {
         date: customDate || null,
       });
       setLastUpdate(res.data.lastUpdated);
