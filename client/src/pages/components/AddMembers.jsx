@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import axios from "axios";
 
 function AddMembers() {
+  const dialogRef = useRef(null);
+
   const [memberData, setMemberData] = useState({
     id: "",
     name: "",
@@ -11,16 +13,16 @@ function AddMembers() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setMemberData({
-      ...memberData,
-      [name]: value,
-    });
+    setMemberData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = e.target;
+  const handleOpen = () => dialogRef.current?.showModal();
+  const handleClose = () => dialogRef.current?.close();
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // ✅ Use the same payload structure as the old version
     const payload = {
       memberID: Number(memberData.id),
       name: memberData.name,
@@ -28,38 +30,35 @@ function AddMembers() {
       marks: Number(memberData.marks),
     };
 
-    axios
-      .post("http://localhost:3000/api/members/", payload)
-      .then((response) => {
-        console.log("✅ Member added:", response.data);
-        alert("Member added successfully!");
-        setMemberData({ id: "", name: "", position: "", marks: "" });
-        form.reset();
-        document.getElementById("dialog").close();
-        window.location.reload();
-      })
-      .catch((error) => {
-        console.error("❌ Error adding member:", error.response?.data || error.message);
-        alert("Failed to add member. Check console for details.");
-      });
+    try {
+      const response = await axios.post("http://localhost:3000/api/members/", payload);
+
+      console.log("✅ Member added:", response.data);
+      alert("Member added successfully!");
+      setMemberData({ id: "", name: "", position: "", marks: "" });
+      handleClose();
+      window.location.reload();
+    } catch (error) {
+      console.error("❌ Error adding member:", error.response?.data || error.message);
+      alert("Failed to add member. Check console for details.");
+    }
   };
 
   return (
     <div>
       <button
-        onClick={() => document.getElementById("dialog").showModal()}
+        onClick={handleOpen}
         className="focus:outline-none cursor-pointer text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-900"
       >
         Add Members
       </button>
 
       <dialog
-        id="dialog"
+        ref={dialogRef}
         aria-labelledby="dialog-title"
         className="fixed inset-0 size-auto max-h-none max-w-none overflow-y-auto bg-transparent backdrop:bg-transparent"
       >
         <div className="fixed inset-0 bg-gray-900/50 transition-opacity"></div>
-
         <div
           tabIndex="0"
           className="flex min-h-full items-end justify-center p-4 text-center focus:outline-none sm:items-center sm:p-0"
@@ -89,17 +88,11 @@ function AddMembers() {
                       />
                     </svg>
                   </div>
-
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                    <h3
-                      id="dialog-title"
-                      className="text-base font-semibold text-white"
-                    >
+                    <h3 id="dialog-title" className="text-base font-semibold text-white">
                       Add Members
                     </h3>
-                    <p className="mt-2 text-sm text-gray-400">
-                      Add members to database.
-                    </p>
+                    <p className="mt-2 text-sm text-gray-400">Add members to database.</p>
 
                     <div className="mt-4 w-full space-y-4">
                       <input
@@ -110,7 +103,7 @@ function AddMembers() {
                         name="id"
                         value={memberData.id}
                         placeholder="ID"
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       <input
                         onChange={handleChange}
@@ -120,7 +113,7 @@ function AddMembers() {
                         name="name"
                         value={memberData.name}
                         placeholder="Full name"
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       <input
                         onChange={handleChange}
@@ -130,7 +123,7 @@ function AddMembers() {
                         name="position"
                         value={memberData.position}
                         placeholder="Position"
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                       <input
                         onChange={handleChange}
@@ -140,7 +133,7 @@ function AddMembers() {
                         name="marks"
                         value={memberData.marks}
                         placeholder="Marks"
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
                     </div>
                   </div>
@@ -156,7 +149,7 @@ function AddMembers() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => document.getElementById("dialog").close()}
+                  onClick={handleClose}
                   className="cursor-pointer mt-3 inline-flex w-full justify-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 sm:mt-0 sm:w-auto"
                 >
                   Cancel
