@@ -14,6 +14,7 @@ Made using **ReactJS, TailwindCSS**
 To deploy this project run
 
 ```bash
+  cd client
   npm install
   npm run dev
 ```
@@ -25,22 +26,10 @@ Made using **ExpressJS, MongoDB**
 To deploy this project run
 
 ```bash
+  cd server
   npm install
   npm start
 ```
 
 
-## Backend
-Made using **ExpressJS, MongoDB**
-
-To deploy this project run
-
-```bash
-  npm install
-  npm start
-```
-
-
-## Whatsapp Bot
-Under Construction....
 
