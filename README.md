@@ -1,29 +1,34 @@
 
-# MMU Marks System
+# 🎓 MMU Marks System
 
-MMU Students Database
+A simple **MMU Students Database** built using the **MERN stack**.
 
-This is a MERN Stack Application and also inclue my ***Orpheus v1*** whatsapp bot
+This is a MERN Stack Application and also includes my **Orpheus v1** WhatsApp bot.
 
-Proudly Made by ***GGRiviya***
+> Proudly made by **GGRiviya**
 
+---
 
-## Frontend
-Made using **ReactJS, TailwindCSS**
+## 📌 Tech Stack
 
-To deploy this project run
+- **Frontend**: ReactJS, TailwindCSS  
+- **Backend**: ExpressJS, MongoDB  
+
+---
+
+## 🚀 Getting Started
+
+### 🖥️ Frontend Setup
+
+To deploy the frontend locally:
 
 ```bash
-  cd client
-  npm install
-  npm run dev
-```
+cd client
+npm install
+npm run dev
 
-
-## Backend
-Made using **ExpressJS, MongoDB**
-
-To deploy this project run
+### 🛠️ Backend Setup
+To deploy the backend locally:
 
 ```bash
   cd server
