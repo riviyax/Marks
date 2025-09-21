@@ -26,6 +26,7 @@ To deploy the frontend locally:
 cd client
 npm install
 npm run dev
+```
 
 ### 🛠️ Backend Setup
 To deploy the backend locally:
