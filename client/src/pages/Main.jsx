@@ -38,28 +38,38 @@ function Main() {
 
   return (
     <div className="bg-gray-800 min-h-screen flex flex-col items-center justify-start p-4">
-      {/* Greeting */}
-      <h1 className="text-white text-5xl font-black capitalize mt-10 mb-6 font-arial text-center w-full">
-        <span className="font-medium">Hey,</span>{" "}
-        <span
-          className="cursor-pointer"
-          onClick={() => {
-            const name = localStorage.getItem("name") || "User";
-            const newName = prompt("Enter your name: ", name);
-            if (newName) {
-              localStorage.setItem("name", newName);
-              window.location.reload();
-            }
-          }}
-        >
-          {localStorage.getItem("name") || "User"}
-        </span>
-      </h1>
+      
+      {/* Header Section: Name + Logout */}
+      <div className="relative w-full max-w-3xl mt-10 mb-6">
+        {/* Logout button (top right) */}
+        <div className="absolute top-0 right-0">
+          <Logout />
+        </div>
 
-      {/* Last update display */}
-      <p className="text-gray-300 mb-4 italic text-center w-full">
-        Last update: <span className="font-semibold">{formatDate(lastUpdate)}</span>
-      </p>
+        {/* Centered Name */}
+        <h1 className="text-white text-4xl sm:text-5xl font-black capitalize font-arial text-center">
+          <span className="font-medium">Hey, </span>
+          <span
+            className="cursor-pointer transition hover:scale-105"
+            onClick={() => {
+              const name = localStorage.getItem("name") || "User";
+              const newName = prompt("Enter your name: ", name);
+              if (newName) {
+                localStorage.setItem("name", newName);
+                window.location.reload();
+              }
+            }}
+          >
+            {localStorage.getItem("name") || "User"}
+          </span>
+        </h1>
+
+        {/* Centered Last Update */}
+        <p className="text-gray-300 mt-2 italic text-center">
+          Last update:{" "}
+          <span className="font-semibold">{formatDate(lastUpdate)}</span>
+        </p>
+      </div>
 
       {/* Input to change last update */}
       <div className="mt-6 w-full max-w-md flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0">
@@ -77,9 +87,8 @@ function Main() {
         </button>
       </div>
 
-      {/* Other components */}
+      {/* Add Members + Table */}
       <div className="mt-10 flex flex-col items-center space-y-6">
-        <Logout />
         <AddMembers />
         <Table />
       </div>
