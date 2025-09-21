@@ -3,7 +3,6 @@
 
 A simple **MMU Students Database** built using the **MERN stack**.
 
-This is a MERN Stack Application and also includes my **Orpheus v1** WhatsApp bot.
 
 > Proudly made by **GGRiviya**
 
