@@ -1,28 +1,72 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
 
 function AddMembers() {
   const dialogRef = useRef(null);
+  const nameInputRef = useRef(null); // 👈 ref for auto-focusing the name input
 
   const [memberData, setMemberData] = useState({
     id: "",
     name: "",
-    position: "",
+    position: "Member",
     marks: "",
   });
 
+  // 🧠 Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setMemberData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleOpen = () => dialogRef.current?.showModal();
+  // 🧠 Fetch next available member ID
+  const fetchNextId = async () => {
+    try {
+      const response = await axios.get("https://marks.vercel.app/api/members/");
+      const members = response.data;
+
+      if (Array.isArray(members) && members.length > 0) {
+        const maxId = Math.max(...members.map((m) => Number(m.memberID || 0)));
+        setMemberData((prev) => ({ ...prev, id: maxId + 1 }));
+      } else {
+        setMemberData((prev) => ({ ...prev, id: 1 }));
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch next ID:", error);
+      setMemberData((prev) => ({ ...prev, id: 1 }));
+    }
+  };
+
+  // 🧠 Open modal
+  const handleOpen = async () => {
+    await fetchNextId();
+    dialogRef.current?.showModal();
+
+    // ⏱ Small delay to ensure dialog is rendered before focusing
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 100);
+  };
+
+  // 🧠 Close modal
   const handleClose = () => dialogRef.current?.close();
 
+  // 🧠 Shortcut: Shift + N opens modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        handleOpen();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // 🧠 Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Use the same payload structure as the old version
     const payload = {
       memberID: Number(memberData.id),
       name: memberData.name,
@@ -32,7 +76,6 @@ function AddMembers() {
 
     try {
       const response = await axios.post("https://marks.vercel.app/api/members/", payload);
-
       console.log("✅ Member added:", response.data);
       alert("Member added successfully!");
       setMemberData({ id: "", name: "", position: "", marks: "" });
@@ -46,13 +89,15 @@ function AddMembers() {
 
   return (
     <div>
+      {/* ✅ Button to manually open the modal */}
       <button
         onClick={handleOpen}
         className="focus:outline-none cursor-pointer text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-900"
       >
-        Add Members
+        Add Members <span className="text-xs opacity-70 ml-1">(Shift + N)</span>
       </button>
 
+      {/* ✅ Dialog */}
       <dialog
         ref={dialogRef}
         aria-labelledby="dialog-title"
@@ -88,12 +133,16 @@ function AddMembers() {
                       />
                     </svg>
                   </div>
+
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                     <h3 id="dialog-title" className="text-base font-semibold text-white">
                       Add Members
                     </h3>
-                    <p className="mt-2 text-sm text-gray-400">Add members to database.</p>
+                    <p className="mt-2 text-sm text-gray-400">
+                      Fill out the form to add a new member.
+                    </p>
 
+                    {/* ✅ Inputs */}
                     <div className="mt-4 w-full space-y-4">
                       <input
                         onChange={handleChange}
@@ -103,9 +152,11 @@ function AddMembers() {
                         name="id"
                         value={memberData.id}
                         placeholder="ID"
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        readOnly
+                        className="w-full bg-gray-200 border border-gray-300 text-gray-800 text-sm rounded-lg p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white cursor-not-allowed"
                       />
                       <input
+                        ref={nameInputRef} // 👈 focus this
                         onChange={handleChange}
                         required
                         id="member-name"
@@ -140,6 +191,7 @@ function AddMembers() {
                 </div>
               </div>
 
+              {/* ✅ Buttons */}
               <div className="bg-gray-700/25 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                 <button
                   type="submit"
