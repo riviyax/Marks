@@ -50,6 +50,7 @@ function EditMembers({ member }) {
   return (
     <div>
       <button
+      id="hidethis"
         onClick={() => dialogRef.current?.showModal()}
         className="font-medium text-blue-600 dark:text-blue-500 hover:underline cursor-pointer text-sm"
       >

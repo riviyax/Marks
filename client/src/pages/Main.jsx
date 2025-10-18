@@ -3,6 +3,8 @@ import axios from "axios";
 import Table from "./components/Table";
 import AddMembers from "./components/AddMembers";
 import Logout from "./components/Logout";
+import "./print.css"; // Import custom styles for print
+import { Printer } from "lucide-react"; // ✅ Icon import
 
 function Main() {
   const [lastUpdate, setLastUpdate] = useState("");
@@ -36,9 +38,13 @@ function Main() {
     return new Date(dateString).toLocaleString();
   };
 
+  // ✅ Print handler
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
     <div className="bg-gray-800 min-h-screen flex flex-col items-center justify-start p-4">
-      
       {/* Header Section: Name + Logout */}
       <div className="relative w-full max-w-3xl mt-10 mb-6">
         {/* Logout button (top right) */}
@@ -87,10 +93,20 @@ function Main() {
         </button>
       </div>
 
-      {/* Add Members + Table */}
+      {/* Add Members + Table + Print */}
       <div className="mt-10 flex flex-col items-center space-y-6">
         <AddMembers />
-        <Table />
+        {/* ✅ Print Button */}
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all duration-200 hover:scale-105 active:scale-95"
+        >
+          <Printer className="w-5 h-5" />
+          Print Table
+        </button>
+        <Table id="printable" />
+
+        
       </div>
     </div>
   );

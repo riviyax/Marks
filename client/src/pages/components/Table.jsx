@@ -28,10 +28,11 @@ function Table() {
   });
 
   return (
-    <div className="w-full max-w-6xl px-4">
+    <div className="w-full max-w-6xl px-4" id="printable">
       {/* Search */}
       <div className="flex justify-end mb-4">
         <input
+        id="hidethis"
           type="text"
           placeholder="Search members..."
           value={searchQuery}
@@ -48,7 +49,7 @@ function Table() {
               <th scope="col" className="px-6 py-3">Member Name</th>
               <th scope="col" className="px-6 py-3">Position</th>
               <th scope="col" className="px-6 py-3">Marks</th>
-              <th scope="col" className="px-6 py-3">Action</th>
+              <th scope="col" id="hidethis" className="px-6 py-3">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -89,6 +90,7 @@ function Table() {
                       We'll reuse the same UpdateMembers (Edit modal) */}
                   <div className="flex gap-3">
                     <button
+                    id="hidethis"
                       onClick={async () => {
                         if (confirm(`Delete ${m.name}?`)) {
                           try {
@@ -105,7 +107,7 @@ function Table() {
                       Delete
                     </button>
 
-                    <UpdateMembers member={m} />
+                    <UpdateMembers id="hidethis" member={m} />
                   </div>
                 </div>
               </div>
