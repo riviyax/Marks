@@ -5,6 +5,7 @@ const mmuSchema = new mongoose.Schema({
   name: { type: String, required: true },
   rank: { type: String, required: true},
   marks: { type: String, required: true},
+  info: { type: String},
 });
 
 module.exports = Members =  mongoose.model("Members", mmuSchema);

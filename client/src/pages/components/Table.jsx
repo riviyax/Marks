@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import MemberCard from "./MemberCard";
-import UpdateMembers from "./UpdateMembers"; // we'll use this in mobile cards
 import axios from "axios";
 
 function Table() {
@@ -10,12 +9,8 @@ function Table() {
   useEffect(() => {
     axios
       .get("https://marks.vercel.app/api/members")
-      .then((res) => {
-        setMembers(res.data);
-      })
-      .catch((err) => {
-        console.log("Error fetching members:", err);
-      });
+      .then((res) => setMembers(res.data))
+      .catch((err) => console.log("Error fetching members:", err));
   }, []);
 
   const filteredMembers = members.filter((member) => {
@@ -32,7 +27,7 @@ function Table() {
       {/* Search */}
       <div className="flex justify-end mb-4">
         <input
-        id="hidethis"
+          id="hidethis"
           type="text"
           placeholder="Search members..."
           value={searchQuery}
@@ -68,50 +63,13 @@ function Table() {
         </table>
       </div>
 
-      {/* Mobile list */}
+      {/* Mobile list (uses same modal now) */}
       <div className="md:hidden space-y-3">
         {filteredMembers.length === 0 ? (
           <div className="text-center py-4 text-gray-500">No members found</div>
         ) : (
           filteredMembers.map((m) => (
-            <div
-              key={m._id}
-              className="bg-white dark:bg-gray-800 shadow px-4 py-3 rounded-lg"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white">{m.name}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-300">Position: {m.rank}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-300">Marks: {m.marks}</p>
-                </div>
-
-                <div className="flex flex-col items-end gap-2">
-                  {/* Delete: small inline confirm not repeated here (MemberCard handles desktop).
-                      We'll reuse the same UpdateMembers (Edit modal) */}
-                  <div className="flex gap-3">
-                    <button
-                    id="hidethis"
-                      onClick={async () => {
-                        if (confirm(`Delete ${m.name}?`)) {
-                          try {
-                            await axios.delete(`https://marks.vercel.app/api/members/${m._id}`);
-                            window.location.reload();
-                          } catch (err) {
-                            console.error(err);
-                            alert("Error deleting member");
-                          }
-                        }
-                      }}
-                      className="text-sm font-medium text-red-600 dark:text-red-500 hover:underline"
-                    >
-                      Delete
-                    </button>
-
-                    <UpdateMembers id="hidethis" member={m} />
-                  </div>
-                </div>
-              </div>
-            </div>
+            <MemberCard key={m._id} member={m} isMobile={true} />
           ))
         )}
       </div>

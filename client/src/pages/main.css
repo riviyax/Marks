@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+.ql-container {
+  color: black !important;
+  background: white !important;
+  border-radius: 6px;
+}
+.ql-toolbar {
+  background: #f3f3f3 !important;
+  border-radius: 6px 6px 0 0;
+}

@@ -75,7 +75,7 @@ function AddMembers() {
     };
 
     try {
-      const response = await axios.post("https://marks.vercel.app/api/members/", payload);
+      const response = await axios.post("https://marks.vercel.app/api/members", payload);
       console.log("✅ Member added:", response.data);
       alert("Member added successfully!");
       setMemberData({ id: "", name: "", position: "", marks: "" });
