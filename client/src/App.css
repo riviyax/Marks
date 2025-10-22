@@ -1,0 +1,21 @@
+/* 🔵 Loader Animation */
+.loader {
+  border: 5px solid rgba(255, 255, 255, 0.1);
+  border-top: 5px solid #3b82f6; /* Tailwind blue-500 */
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 25px #3b82f6aa;
+  margin-bottom: 1rem;
+}
+
+/* 🔁 Spin Animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

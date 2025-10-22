@@ -28,7 +28,7 @@ function Login() {
   };
   const handleSubmit = () => {
     const otpCode = otp.join("");
-    if (otpCode == 548) {
+    if (otpCode == 654) {
       localStorage.setItem("otpVerified", "true");
       alert("OTP Verified Successfully!");
       window.location.reload();
@@ -74,7 +74,7 @@ function Login() {
         </button>
       </div>
       <div className="absolute bottom-4 w-full text-center text-white text-xs opacity-70">
-        Developed by <span className="font-semibold">GGRiviya</span>
+        Developed by <span className="font-semibold">Riviya_X</span>
       </div>
     </div>
   );
