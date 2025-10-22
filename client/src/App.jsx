@@ -18,7 +18,7 @@ function App() {
   // ✅ Allowed IPs
   const allowedIPs = [
     "175.157.9.59",
-    "123.231.45.88",
+    "223.224.11.250",
     "112.134.90.20",
   ];
   //End Of Allowed IPs

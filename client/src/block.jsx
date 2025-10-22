@@ -4,45 +4,7 @@ import { motion } from "framer-motion";
 import "./block.css";
 
 function Block() {
-  const [ip, setIP] = useState("");
-
-
-
-    // ✅ Allowed IPs
-  const allowedIPs = [
-    "175.157.9.59",
-    "123.231.45.88",
-    "112.134.90.20",
-  ];
-  //End Of Allowed IPs
-
-
-
-
-  const getData = async () => {
-    try {
-      const res = await axios.get("https://api.ipify.org/?format=json");
-      setIP(res.data.ip);
-    } catch (err) {
-      console.error("Failed to fetch IP", err);
-    }
-  };
-
-  useEffect(() => {
-    getData();
-  }, []);
-
-  function Retry() {
-    return () => {
-      if (ip == allowedIPs) {
-        alert("Access Granted!");
-        window.location.reload();
-      }else{
-        window.location.reload();
-        alert("Access Denied!");
-      }
-    };
-  }
+  
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white px-4 text-center">
       <motion.div
