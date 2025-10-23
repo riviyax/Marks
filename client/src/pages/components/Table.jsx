@@ -5,6 +5,7 @@ import axios from "axios";
 function Table() {
   const [members, setMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState("none");
 
   useEffect(() => {
     axios
@@ -13,6 +14,7 @@ function Table() {
       .catch((err) => console.log("Error fetching members:", err));
   }, []);
 
+  // Filter members
   const filteredMembers = members.filter((member) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -22,40 +24,77 @@ function Table() {
     );
   });
 
+  // Sort logic
+  const sortedMembers = [...filteredMembers].sort((a, b) => {
+    switch (sortOption) {
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      case "name-desc":
+        return b.name.localeCompare(a.name);
+      case "marks-high":
+        return b.marks - a.marks;
+      case "marks-low":
+        return a.marks - b.marks;
+      default:
+        return 0; // "none" → keep original order
+    }
+  });
+
   return (
     <div className="w-full max-w-6xl px-4" id="printable">
-      {/* Search */}
-      <div className="flex justify-end mb-4">
+      {/* Search + Sort */}
+      <div className="flex flex-col md:flex-row justify-end md:items-center mb-4 gap-2">
         <input
           id="hidethis"
           type="text"
           placeholder="Search members..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
+          className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
         />
+
+        <select
+          id="hidethis"
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="w-full md:w-52 px-3 py-2 border border-gray-300 rounded-lg text-sm dark:bg-gray-700 dark:text-white dark:border-gray-600"
+        >
+          <option value="none">None (Default)</option>
+          <option value="name-asc">Name (A → Z)</option>
+          <option value="name-desc">Name (Z → A)</option>
+          <option value="marks-high">Marks (Highest → Lowest)</option>
+          <option value="marks-low">Marks (Lowest → Highest)</option>
+        </select>
       </div>
 
-      {/* Desktop table */}
+      {/* Desktop Table */}
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg hidden w-full md:block">
         <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
-              <th scope="col" className="px-6 py-3">Member Name</th>
-              <th scope="col" className="px-6 py-3">Position</th>
-              <th scope="col" className="px-6 py-3">Marks</th>
-              <th scope="col" id="hidethis" className="px-6 py-3">Action</th>
+              <th scope="col" className="px-6 py-3">
+                Member Name
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Position
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Marks
+              </th>
+              <th scope="col" id="hidethis" className="px-6 py-3">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
-            {filteredMembers.length === 0 ? (
+            {sortedMembers.length === 0 ? (
               <tr>
                 <td colSpan="4" className="text-center py-4 text-gray-500">
                   No members found
                 </td>
               </tr>
             ) : (
-              filteredMembers.map((member) => (
+              sortedMembers.map((member) => (
                 <MemberCard key={member._id} member={member} />
               ))
             )}
@@ -63,12 +102,12 @@ function Table() {
         </table>
       </div>
 
-      {/* Mobile list (uses same modal now) */}
+      {/* Mobile List */}
       <div className="md:hidden space-y-3">
-        {filteredMembers.length === 0 ? (
+        {sortedMembers.length === 0 ? (
           <div className="text-center py-4 text-gray-500">No members found</div>
         ) : (
-          filteredMembers.map((m) => (
+          sortedMembers.map((m) => (
             <MemberCard key={m._id} member={m} isMobile={true} />
           ))
         )}

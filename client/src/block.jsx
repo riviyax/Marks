@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
 import { motion } from "framer-motion";
 import "./block.css";
 
-function Block() {
-  
+function Block({ ip }) {
+  const handleRetry = () => {
+    window.location.reload(); // simple refresh to retry IP check
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white px-4 text-center">
       <motion.div
@@ -16,7 +17,7 @@ function Block() {
         <img
           src="/error.png"
           alt="Error"
-          className="w-100 mx-auto mb-6"
+          className="w-32 mx-auto mb-6"
         />
         <h1 className="text-3xl md:text-4xl font-bold text-red-500 drop-shadow-md">
           Unauthorized IP Address
@@ -38,7 +39,7 @@ function Block() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           className="mt-8 bg-red-600 hover:bg-red-700 transition-all text-white font-semibold py-2 px-6 rounded-lg shadow-md"
-          onClick={Retry()}
+          onClick={handleRetry}
         >
           Retry
         </motion.button>
