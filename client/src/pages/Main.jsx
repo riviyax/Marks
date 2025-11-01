@@ -104,6 +104,7 @@ function Main() {
           <Printer className="w-5 h-5" />
           Print Table
         </button>
+        {/* <p className="updateprint text-black text-xl"><span className="font-bold">Last Updated:</span> {formatDate(lastUpdate)}</p> */}
         <Table id="printable" />
 
         

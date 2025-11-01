@@ -13,14 +13,26 @@
     width: 100%;
   }
 
-  #hidethis {
+   #hidethis {
     display: none;
   }
-  .printhide {
+  /*.printhide {
     display: none !important;
   }
 
   .printclass {
     display: table-cell !important;
-  }
+  } */
+
+  .updateprint {
+    visibility: visible !important;
+    display: block !important;
+    color: black !important; 
+  } 
+
 }
+  .updateprint {
+    visibility: hidden !important;
+    display: block !important;
+    color: black !important; 
+  } 

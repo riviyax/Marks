@@ -76,7 +76,7 @@ function MemberCard({ member, isMobile = false }) {
       </th>
       <td className="px-6 py-4">{member.rank}</td>
       <td className="px-6 py-4">{member.marks}</td>
-      <td className="printclass px-6 py-4 text-blue-500"><a href={`/memberview?id=${memberData._id}`}>View</a></td>
+      <td onClick={(e) => e.stopPropagation()} className="printclass px-6 py-4 text-blue-500"><a href={`/memberview?id=${memberData._id}`}>View</a></td>
     </tr>
   );
 
@@ -98,7 +98,7 @@ function MemberCard({ member, isMobile = false }) {
             Marks: {member.marks}
           </p>
         </div>
-        <span className="text-blue-500 text-sm">View</span>
+        <span onClick={(e) => e.stopPropagation()} className="text-blue-500 text-sm"><a href={`/memberview?id=${memberData._id}`}>View</a></span>
       </div>
     </div>
   );
