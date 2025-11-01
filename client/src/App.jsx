@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Main from "./pages/Main";
 import Block from "./block";
 import TempIP from "./tempip";
+import MemberView from "./memberview"; // ✅ Added
 import "./App.css";
 
 function App() {
@@ -16,13 +17,11 @@ function App() {
   const isOtpVerified = localStorage.getItem("otpVerified") === "true";
   const tempIP = localStorage.getItem("temp_ip") || null;
 
-  // ✅ Allowed IPs (memoized to prevent unnecessary recalculations)
   const allowedIPs = useMemo(
     () => ["175.157.31.110", "223.224.11.250", "112.134.90.20", tempIP],
     [tempIP]
   );
 
-  // ✅ Fetch current public IP
   const getData = async () => {
     try {
       const res = await axios.get("https://api.ipify.org/?format=json", {
@@ -33,7 +32,6 @@ function App() {
       console.error("Failed to fetch IP:", err.message);
       setError(true);
     } finally {
-      // Small delay for smooth animation
       setTimeout(() => setLoading(false), 1200);
     }
   };
@@ -48,27 +46,28 @@ function App() {
 
   const isAuthorized = ip && allowedIPs.includes(ip);
 
-  // ✅ Animation variants
   const fadeVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { duration: 0.6 } },
     exit: { opacity: 0, transition: { duration: 0.4 } },
   };
 
-  // ✅ Page Layout
   return (
     <Router>
       <AnimatePresence mode="wait">
         <Routes>
+
+          {/* ✅ MEMBER VIEW PAGE (PUBLIC) */}
+          <Route path="/memberview" element={<MemberView />} />
+
           {/* Temporary IP setup page */}
           <Route path="/tempip" element={<TempIP />} />
 
-          {/* Default route logic */}
+          {/* Main logic route */}
           <Route
             path="*"
             element={
               loading ? (
-                // 🌐 Loader Screen
                 <motion.div
                   key="loader"
                   variants={fadeVariants}
@@ -83,7 +82,6 @@ function App() {
                   </p>
                 </motion.div>
               ) : error ? (
-                // ⚠️ Error Screen
                 <motion.div
                   key="error"
                   variants={fadeVariants}
@@ -107,7 +105,6 @@ function App() {
                   </button>
                 </motion.div>
               ) : !tempIP && !isOtpVerified ? (
-                // 🟡 No Temp IP Warning
                 <motion.div
                   key="notempip"
                   variants={fadeVariants}
@@ -127,7 +124,6 @@ function App() {
                   </a>
                 </motion.div>
               ) : isOtpVerified ? (
-                // ✅ OTP Verified → Main Page
                 <motion.div
                   key="main"
                   variants={fadeVariants}
@@ -138,7 +134,6 @@ function App() {
                   <Main />
                 </motion.div>
               ) : !isAuthorized ? (
-                // 🚫 Blocked IP
                 <motion.div
                   key="block"
                   variants={fadeVariants}
@@ -149,7 +144,6 @@ function App() {
                   <Block ip={ip} />
                 </motion.div>
               ) : (
-                // 🔐 Login Page
                 <motion.div
                   key="login"
                   variants={fadeVariants}

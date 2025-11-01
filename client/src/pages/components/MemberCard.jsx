@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
+import "../print.css"
 
 function MemberCard({ member, isMobile = false }) {
   const [openModal, setOpenModal] = useState(false);
@@ -75,7 +76,7 @@ function MemberCard({ member, isMobile = false }) {
       </th>
       <td className="px-6 py-4">{member.rank}</td>
       <td className="px-6 py-4">{member.marks}</td>
-      <td id="hidethis" className="px-6 py-4 text-blue-500">View</td>
+      <td className="printclass px-6 py-4 text-blue-500"><a href={`/memberview?id=${memberData._id}`}>View</a></td>
     </tr>
   );
 

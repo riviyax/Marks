@@ -30,6 +30,7 @@ function TempIP() {
     if (password === "MMU@0055") {
       localStorage.setItem("temp_ip", ip);
       alert("✅ Temporary IP set successfully!");
+      window.location.assign("/");
     } else {
       alert("❌ Incorrect password. Please try again.");
     }
