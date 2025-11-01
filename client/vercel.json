@@ -1,5 +1,6 @@
 {
   "routes": [
-    { "src": "/tempip", "dest": "/index.html" }
+    { "src": "/tempip", "dest": "/index.html" },
+    { "src": "/memberview", "dest": "/index.html" }
   ]
 }
