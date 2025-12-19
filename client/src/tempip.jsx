@@ -27,7 +27,7 @@ function TempIP() {
   }, []);
 
   const handleSetIP = () => {
-    if (password === "MMU@0055") {
+    if (password === import.meta.env.VITE_TEMPIP_LOGIN_PASS) {
       localStorage.setItem("temp_ip", ip);
       alert("✅ Temporary IP set successfully!");
       window.location.assign("/");
