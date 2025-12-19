@@ -21,7 +21,7 @@ function AddMembers() {
   // 🧠 Fetch next available member ID
   const fetchNextId = async () => {
     try {
-      const response = await axios.get("https://marks.vercel.app/api/members/");
+      const response = await axios.get(import.meta.env.VITE_API_URL);
       const members = response.data;
 
       if (Array.isArray(members) && members.length > 0) {
@@ -75,7 +75,7 @@ function AddMembers() {
     };
 
     try {
-      const response = await axios.post("https://marks.vercel.app/api/members", payload);
+      const response = await axios.post(import.meta.env.VITE_API_URL, payload);
       console.log("✅ Member added:", response.data);
       alert("Member added successfully!");
       setMemberData({ id: "", name: "", position: "", marks: "" });

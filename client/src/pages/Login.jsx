@@ -28,7 +28,7 @@ function Login() {
   };
   const handleSubmit = () => {
     const otpCode = otp.join("");
-    if (otpCode == 654) {
+    if (otpCode == import.meta.env.VITE_LOGIN_PASS) {
       localStorage.setItem("otpVerified", "true");
       alert("OTP Verified Successfully!");
       window.location.reload();

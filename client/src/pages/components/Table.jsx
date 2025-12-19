@@ -12,14 +12,14 @@ function Table() {
   // Fetch members
   useEffect(() => {
     axios
-      .get("https://marks.vercel.app/api/members")
+      .get(import.meta.env.VITE_API_URL)
       .then((res) => setMembers(res.data))
       .catch((err) => console.log("Error fetching members:", err));
   }, []);
 
   // ✅ Fetch last update date
 useEffect(() => {
-  axios.get("https://marks.vercel.app/api/last-update")
+  axios.get(import.meta.env.VITE_API_DATE)
     .then((res) => {
       console.log("Last Update API Response:", res.data);
       setLastUpdate(res.data.lastUpdated || res.data.updatedAt || res.data || "");

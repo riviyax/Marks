@@ -12,7 +12,7 @@ export default function MemberView() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch("https://marks.vercel.app/api/members");
+        const res = await fetch(import.meta.env.VITE_API_URL);
         const data = await res.json();
         const found = data.find((m) => m._id === id);
         setMember(found || null);

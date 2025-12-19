@@ -33,7 +33,7 @@ function MemberCard({ member, isMobile = false }) {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await axios.put(`https://marks.vercel.app/api/members/${memberData._id}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/${memberData._id}`, {
         name: memberData.name,
         rank: memberData.rank,
         marks: Number(memberData.marks),
@@ -52,7 +52,7 @@ function MemberCard({ member, isMobile = false }) {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`https://marks.vercel.app/api/members/${memberData._id}`);
+      await axios.delete(`${import.meta.env.VITE_API_URL}/${memberData._id}`);
       alert("🗑️ Member deleted.");
       setConfirmDelete(false);
       window.location.reload();
