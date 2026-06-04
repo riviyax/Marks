@@ -3,9 +3,10 @@ const mongoose = require("mongoose");
 const mmuSchema = new mongoose.Schema({
   memberID: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  rank: { type: String, required: true},
-  marks: { type: String, required: true},
-  info: { type: String},
+  rank: { type: String, required: true },
+  marks: { type: String, required: true },
+  info: { type: String },
+  whatsappNumber: { type: String, default: "" }, // e.g. "94771234567" (no + sign)
 });
 
-module.exports = Members =  mongoose.model("Members", mmuSchema);
+module.exports = (Members = mongoose.model("Members", mmuSchema));
