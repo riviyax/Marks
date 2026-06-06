@@ -4,7 +4,7 @@ import axios from "axios";
 import "../print.css";
 
 const BOT_API  = import.meta.env.VITE_BOT_URL;
-const GROUP_ID = import.meta.env.VITE_GROUP_ID;
+const GROUP_ID = "120363428923888353@g.us";
 
 function Table() {
   const [members, setMembers]         = useState([]);

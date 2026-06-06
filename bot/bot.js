@@ -27,7 +27,7 @@ const PORT          = process.env.BOT_PORT         || 3001;
 const API_BASE      = process.env.API_BASE         || "http://localhost:3000/api/members";
 const MEMBER_VIEW   = process.env.MEMBER_VIEW_BASE || "https://mmumarks.vercel.app/memberview";
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE    || "0 9 * * 1";
-const GROUP_ID      = process.env.GROUP_ID         || "";
+const GROUP_ID      = process.env.GROUP_ID         || "120363428923888353@g.us";
 const IMAGE_PATH    = path.resolve(__dirname, "images/caption.png"); // always use local image
 // ─────────────────────────────────────────────────────────
 
@@ -72,8 +72,8 @@ function buildMessage(member) {
     `Your evaluation metrics have been updated.\n\n` +
     `❖ *WEEKLY STATUS EVALUATION* ❖\n` +
     ` ─── ─── ─── ─── ─── ───\n` +
-    ` 📈  *Position* : ${member.rank}${gradeInfo}${catInfo}\n` +
-    ` 🔥  *Marks*    : [ *${member.marks}* ]\n` +
+    `   *Position* : ${member.rank}${gradeInfo}${catInfo}\n` +
+    `   *Marks*    : [ *${member.marks}* ]\n` +
     ` ─── ─── ─── ─── ─── ───\n\n` +
     `🔗 *View Full Activity Log:*\n${profileLink}\n\n` +
     `◆ ─── ─── ─── ─── ─── ◆\n` +
@@ -87,9 +87,9 @@ function buildGroupAddMessage(member) {
   const catInfo   = member.category ? `\n 📌  *Category* : ${member.category}` : "";
   return (
     `✅ *New Member Added* ✅\n\n` +
-    ` 👤  *Name*     : ${member.name}${gradeInfo}${catInfo}\n` +
-    ` 🔥  *Marks*    : [ *${member.marks}* ]\n` +
-    ` 📈  *Position* : ${member.rank}\n\n` +
+    `   *Name*     : ${member.name}${gradeInfo}${catInfo}\n` +
+    `   *Marks*    : [ *${member.marks}* ]\n` +
+    `   *Position* : ${member.rank}\n\n` +
     `◆ ─── ─── ─── ─── ─── ◆\n` +
     `⚡ _MMU Marks Bot_`
   );
@@ -201,9 +201,9 @@ async function handleMarksMember(jid, query) {
 
     const text =
       `◢◤ *Member Details* ◢◤\n\n` +
-      ` 👤  *Name*     : ${match.name}${gradeInfo}${catInfo}\n` +
-      ` 📈  *Position* : ${match.rank}\n` +
-      ` 🔥  *Marks*    : [ *${match.marks}* ]\n\n` +
+      `   *Name*     : ${match.name}${gradeInfo}${catInfo}\n` +
+      `   *Position* : ${match.rank}\n` +
+      `   *Marks*    : [ *${match.marks}* ]\n\n` +
       `🔗 *Full Activity Log:*\n${profileLink}\n\n` +
       `◆ ─── ─── ─── ─── ─── ◆\n⚡ _MMU Marks Bot_`;
 
