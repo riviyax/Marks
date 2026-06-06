@@ -6,7 +6,9 @@ const mmuSchema = new mongoose.Schema({
   rank: { type: String, required: true },
   marks: { type: String, required: true },
   info: { type: String },
-  whatsappNumber: { type: String, default: "" }, // e.g. "94771234567" (no + sign)
+  whatsappNumber: { type: String, default: "" },
+  grade: { type: String, default: "" },           // e.g. "Grade 11", "A/L"
+  category: { type: String, default: "" },        // e.g. "Announcing", "Sound Balancing"
 });
 
-module.exports = (Members = mongoose.model("Members", mmuSchema));
+module.exports = Members = mongoose.model("Members", mmuSchema);
