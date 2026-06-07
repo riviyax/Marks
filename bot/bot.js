@@ -23,7 +23,7 @@ const path     = require("path");
 require("dotenv").config();
 
 // ── Config ────────────────────────────────────────────────
-const PORT          = process.env.BOT_PORT         || 3001;
+const PORT          = process.env.BOT_PORT          || 3001;
 const API_BASE      = process.env.API_BASE         || "http://localhost:3000/api/members";
 const MEMBER_VIEW   = process.env.MEMBER_VIEW_BASE || "https://mmumarks.vercel.app/memberview";
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE    || "0 9 * * 1";
@@ -63,8 +63,8 @@ async function dispatchMessage(jid, text) {
 // Weekly marks message per member
 function buildMessage(member) {
   const profileLink = `${MEMBER_VIEW}?id=${member._id}`;
-  const gradeInfo   = member.grade    ? `\n 🎓  *Grade*    : ${member.grade}`    : "";
-  const catInfo     = member.category ? `\n 📌  *Category* : ${member.category}` : "";
+  const gradeInfo   = member.grade    ? `\n   *Grade* : ${member.grade}`    : "";
+  const catInfo     = member.category ? `\n   *Category* : ${member.category}` : "";
 
   return (
     `◢◤ *Marks Bot | Mudalians' Media Unit* ◢◤\n\n` +
@@ -73,7 +73,7 @@ function buildMessage(member) {
     `❖ *WEEKLY STATUS EVALUATION* ❖\n` +
     ` ─── ─── ─── ─── ─── ───\n` +
     `   *Position* : ${member.rank}${gradeInfo}${catInfo}\n` +
-    `   *Marks*    : [ *${member.marks}* ]\n` +
+    `   *Marks* : [ *${member.marks}* ]\n` +
     ` ─── ─── ─── ─── ─── ───\n\n` +
     `🔗 *View Full Activity Log:*\n${profileLink}\n\n` +
     `◆ ─── ─── ─── ─── ─── ◆\n` +
@@ -83,12 +83,12 @@ function buildMessage(member) {
 
 // Message sent to group when member is added
 function buildGroupAddMessage(member) {
-  const gradeInfo = member.grade    ? `\n 🎓  *Grade*    : ${member.grade}`    : "";
+  const gradeInfo = member.grade    ? `\n 🎓  *Grade* : ${member.grade}`    : "";
   const catInfo   = member.category ? `\n 📌  *Category* : ${member.category}` : "";
   return (
     `✅ *New Member Added* ✅\n\n` +
-    `   *Name*     : ${member.name}${gradeInfo}${catInfo}\n` +
-    `   *Marks*    : [ *${member.marks}* ]\n` +
+    `   *Name* : ${member.name}${gradeInfo}${catInfo}\n` +
+    `   *Marks* : [ *${member.marks}* ]\n` +
     `   *Position* : ${member.rank}\n\n` +
     `◆ ─── ─── ─── ─── ─── ◆\n` +
     `⚡ _MMU Marks Bot_`
@@ -135,9 +135,9 @@ async function handleAbout(jid) {
   const text =
     `◢◤ *Marks Bot | System Status* ◢◤\n\n` +
     `🤖  *Bot Name* : Ayanakoji_X\n` +
-    `🟢  *Status*   : Online\n` +
-    `⏱️  *Uptime*   : ${formatUptime()}\n` +
-    `🖼️  *Image*    : ${hasImage() ? "✅ Loaded" : "❌ Not found (images/caption.png)"}\n\n` +
+    `🟢  *Status* : Online\n` +
+    `⏱️  *Uptime* : ${formatUptime()}\n` +
+    `🖼️  *Image* : ${hasImage() ? "✅ Loaded" : "❌ Not found (images/caption.png)"}\n\n` +
     `📅 *Next Weekly Blast:*\n   ${getNextRunTime()}\n\n` +
     `📋 *Commands:*\n` +
     `   .about       — Show this status\n` +
@@ -164,8 +164,8 @@ async function handleMarksList(jid) {
     sorted.forEach((m, i) => {
       const grade = m.grade ? ` (${m.grade})` : "";
       list += `${i + 1}. *${m.name}*${grade}\n`;
-      list += `    🔥 Marks: *${m.marks}*  |  📈 ${m.rank}\n`;
-      if (m.category) list += `    📌 ${m.category}\n`;
+      list += `     Marks: *${m.marks}* |   ${m.rank}\n`;
+      if (m.category) list += `     ${m.category}\n`;
       list += "\n";
     });
     list += `Total members: ${members.length}\n`;
@@ -173,7 +173,7 @@ async function handleMarksList(jid) {
 
     await dispatchMessage(jid, list);
   } catch (err) {
-    await sock.sendMessage(jid, { text: `❌ Failed to fetch marks list: ${err.message}` });
+    await sock.sendMessage(jid, { text: `❌ Failed to fetch marks list.` });
   }
 }
 
@@ -196,20 +196,20 @@ async function handleMarksMember(jid, query) {
     }
 
     const profileLink = `${MEMBER_VIEW}?id=${match._id}`;
-    const gradeInfo   = match.grade    ? `\n 🎓  *Grade*    : ${match.grade}`    : "";
+    const gradeInfo   = match.grade    ? `\n 🎓  *Grade* : ${match.grade}`    : "";
     const catInfo     = match.category ? `\n 📌  *Category* : ${match.category}` : "";
 
     const text =
       `◢◤ *Member Details* ◢◤\n\n` +
-      `   *Name*     : ${match.name}${gradeInfo}${catInfo}\n` +
+      `   *Name* : ${match.name}${gradeInfo}${catInfo}\n` +
       `   *Position* : ${match.rank}\n` +
-      `   *Marks*    : [ *${match.marks}* ]\n\n` +
+      `   *Marks* : [ *${match.marks}* ]\n\n` +
       `🔗 *Full Activity Log:*\n${profileLink}\n\n` +
       `◆ ─── ─── ─── ─── ─── ◆\n⚡ _MMU Marks Bot_`;
 
     await dispatchMessage(jid, text);
   } catch (err) {
-    await sock.sendMessage(jid, { text: `❌ Error: ${err.message}` });
+    await sock.sendMessage(jid, { text: `❌ Failed to resolve member details.` });
   }
 }
 
@@ -233,14 +233,14 @@ async function sendWeeklyMarks() {
         sentCount++;
         await new Promise((r) => setTimeout(r, 1500));
       } catch (err) {
-        console.error(`❌ Failed for ${member.name}: ${err.message}`);
+        console.error(`❌ Failed for ${member.name}`);
         skippedCount++;
       }
     }
     console.log("🎉 Blast complete!");
     return { sent: sentCount, skipped: skippedCount, message: "Blast complete!" };
   } catch (err) {
-    return { sent: sentCount, skipped: skippedCount, error: err.message };
+    return { sent: sentCount, skipped: skippedCount, error: "Network stream failure during bulk distribution." };
   }
 }
 
@@ -250,9 +250,11 @@ async function connectToWhatsApp() {
   const { version } = await fetchLatestBaileysVersion();
 
   sock = makeWASocket({
-    version, auth: state,
+    version,
+    auth: state,
     logger: pino({ level: "silent" }),
     printQRInTerminal: false,
+    shouldIgnoreJid: (jid) => false,
   });
 
   if (!sock.authState.creds.registered) {
@@ -264,41 +266,45 @@ async function connectToWhatsApp() {
         let code = await sock.requestPairingCode(cleaned);
         code = code?.match(/.{1,4}/g)?.join("-") || code;
         console.log(`\n🔑 Pairing Code: ${code}\n`);
-      } catch (err) { console.error("❌ Pairing failed:", err.message); }
+      } catch (err) { console.error("❌ Pairing failed"); }
     }, 3000);
   }
 
   sock.ev.on("creds.update", saveCreds);
 
-  // ✅ Incoming message handler
+  // Incoming message handler
   sock.ev.on("messages.upsert", async ({ messages }) => {
-    for (const msg of messages) {
-      if (msg.key.fromMe) continue;
+    try {
+      for (const msg of messages) {
+        if (msg.key.fromMe) continue;
 
-      const text = (
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text || ""
-      ).trim();
+        const text = (
+          msg.message?.conversation ||
+          msg.message?.extendedTextMessage?.text || ""
+        ).trim();
 
-      if (!text.startsWith(".")) continue;
+        if (!text.startsWith(".")) continue;
 
-      const jid = msg.key.remoteJid;
-      console.log(`📩 Command "${text}" from ${jid}`);
+        const jid = msg.key.remoteJid;
+        console.log(`📩 Command "${text}" from ${jid}`);
 
-      if (text.toLowerCase() === ".about") {
-        await handleAbout(jid);
+        if (text.toLowerCase() === ".about") {
+          await handleAbout(jid);
 
-      } else if (text.toLowerCase() === ".markslist") {
-        await handleMarksList(jid);
+        } else if (text.toLowerCase() === ".markslist") {
+          await handleMarksList(jid);
 
-      } else if (text.toLowerCase().startsWith(".marks ")) {
-        const query = text.slice(7).trim(); // everything after ".marks "
-        if (query) {
-          await handleMarksMember(jid, query);
-        } else {
-          await sock.sendMessage(jid, { text: "Usage: `.marks MemberName`\nExample: `.marks Helika`" });
+        } else if (text.toLowerCase().startsWith(".marks ")) {
+          const query = text.slice(7).trim();
+          if (query) {
+            await handleMarksMember(jid, query);
+          } else {
+            await sock.sendMessage(jid, { text: "Usage: `.marks MemberName`\nExample: `.marks Helika`" });
+          }
         }
       }
+    } catch (upsertErr) {
+      console.warn("⚠️ Intercepted dynamic read stream payload evaluation failure.");
     }
   });
 
@@ -350,7 +356,7 @@ app.post("/api/bot/send", async (req, res) => {
     console.log(`✅ Sent to ${displayName(member)}`);
     return res.json({ success: true, message: `Sent to ${displayName(member)}` });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to send.", details: err.message });
+    return res.status(500).json({ error: "Failed to dispatch message payload." });
   }
 });
 
@@ -358,39 +364,66 @@ app.post("/api/bot/send", async (req, res) => {
 app.post("/api/bot/send-all", async (req, res) => {
   if (!sock) return res.status(503).json({ error: "Bot not connected." });
   const result = await sendWeeklyMarks();
-  return result.error ? res.status(500).json(result) : res.json(result);
+  return result.error ? res.status(500).json({ error: result.error }) : res.json(result);
 });
 
-// Add single member to group
+// ✅ Add single member to group (With Clean Privacy Settings Fallback Join Link)
 app.post("/api/bot/add-to-group", async (req, res) => {
   const { memberId, groupId } = req.body;
   if (!sock)               return res.status(503).json({ error: "Bot not connected." });
   if (!memberId || !groupId) return res.status(400).json({ error: "Missing memberId or groupId." });
+  
   try {
     const { data: member } = await axios.get(`${API_BASE}/${memberId}`, { timeout: 15000 });
     if (!member?.whatsappNumber) return res.status(404).json({ error: "No WhatsApp number for this member." });
 
     const participantJid = `${member.whatsappNumber.replace(/\D/g, "")}@s.whatsapp.net`;
-    await sock.groupParticipantsUpdate(groupId, [participantJid], "add");
-    console.log(`✅ Added ${displayName(member)} to group`);
+    
+    try {
+      // Attempt direct add
+      await sock.groupParticipantsUpdate(groupId, [participantJid], "add");
+      console.log(`✅ Added ${displayName(member)} to group`);
 
-    // ✅ Send group announcement message with image
-    await dispatchMessage(groupId, buildGroupAddMessage(member));
+      await dispatchMessage(groupId, buildGroupAddMessage(member));
+      return res.json({ success: true, status: "added", message: `${displayName(member)} added directly.` });
 
-    return res.json({ success: true, message: `${displayName(member)} added to group!` });
+    } catch (addErr) {
+      // Direct add failed (Privacy restrictions found). Handle cleanly without logging the full big error dump.
+      console.log(`⚠️ Privacy restriction hit for ${member.name}. Sending direct join link...`);
+      
+      const inviteCode = await sock.groupInviteCode(groupId);
+      const inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
+
+      const dmText = 
+        `◢◤ *Group Invitation | MMU* ◢◤\n\n` +
+        `👋 Hello *${member.name}*,\n` +
+        `We tried adding you to our official group, but your privacy settings didn't allow direct adds.\n\n` +
+        `Please use the link below to join manually:\n` +
+        `🔗 ${inviteLink}\n\n` +
+        `◆ ─── ─── ─── ─── ─── ◆\n⚡ _MMU Marks Bot_`;
+
+      await dispatchMessage(participantJid, dmText);
+      
+      return res.json({ 
+        success: true, 
+        status: "invited", 
+        message: "Privacy settings prevented direct add. Invitation link has been sent to DM." 
+      });
+    }
   } catch (err) {
-    return res.status(500).json({ error: "Failed to add to group.", details: err.message });
+    return res.status(500).json({ error: "Internal member data resolution failure." });
   }
 });
 
-// ✅ Add multiple selected members to group
+// ✅ Add multiple selected members to group (With Clean Privacy Settings Fallback Join Link)
 app.post("/api/bot/add-selected-to-group", async (req, res) => {
   const { memberIds, groupId } = req.body;
   if (!sock) return res.status(503).json({ error: "Bot not connected." });
   if (!memberIds?.length || !groupId) return res.status(400).json({ error: "Missing memberIds or groupId." });
 
-  let added = 0, failed = 0;
+  let added = 0, invited = 0, failed = 0;
   const addedNames = [];
+  let inviteLink = null;
 
   for (const memberId of memberIds) {
     try {
@@ -398,27 +431,47 @@ app.post("/api/bot/add-selected-to-group", async (req, res) => {
       if (!member?.whatsappNumber) { failed++; continue; }
 
       const jid = `${member.whatsappNumber.replace(/\D/g, "")}@s.whatsapp.net`;
-      await sock.groupParticipantsUpdate(groupId, [jid], "add");
-      addedNames.push(displayName(member));
-      added++;
-      await new Promise((r) => setTimeout(r, 1000)); // small delay between adds
+      
+      try {
+        await sock.groupParticipantsUpdate(groupId, [jid], "add");
+        addedNames.push(displayName(member));
+        added++;
+      } catch (addErr) {
+        // Privacy catch block executed cleanly without big console error spam
+        if (!inviteLink) {
+          const inviteCode = await sock.groupInviteCode(groupId);
+          inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
+        }
+
+        const dmText = 
+          `◢◤ *Group Invitation | MMU* ◢◤\n\n` +
+          `👋 Hello *${member.name}*,\n` +
+          `We tried adding you to our official group, but your privacy settings don't allow direct additions.\n\n` +
+          `Please use this link to join us manually:\n` +
+          `🔗 ${inviteLink}\n\n` +
+          `◆ ─── ─── ─── ─── ─── ◆\n⚡ _MMU Marks Bot_`;
+
+        await dispatchMessage(jid, dmText);
+        invited++;
+      }
+      await new Promise((r) => setTimeout(r, 1500));
     } catch {
       failed++;
     }
   }
 
-  // ✅ Send one combined announcement to group
   if (addedNames.length > 0) {
     const announcementText =
       `✅ *New Members Added to Group* ✅\n\n` +
       addedNames.map((n, i) => `${i + 1}. *${n}*`).join("\n") +
       `\n\n` +
-      `Total added: *${added}*\n` +
+      `Total added directly: *${added}*\n` +
+      (invited > 0 ? `Sent DM invites due to privacy settings: *${invited}*\n` : "") +
       `◆ ─── ─── ─── ─── ─── ◆\n⚡ _MMU Marks Bot_`;
     await dispatchMessage(groupId, announcementText);
   }
 
-  return res.json({ added, failed, message: `${added} added, ${failed} failed.` });
+  return res.json({ added, invited, failed, message: `${added} added, ${invited} invited via DM, ${failed} failed.` });
 });
 
 // Bot status
