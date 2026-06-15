@@ -2,5 +2,11 @@
   "routes": [
     { "src": "/tempip", "dest": "/index.html" },
     { "src": "/memberview", "dest": "/index.html" }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "http://sgp-node1.netchx.net:10061/api/$1"
+    }
   ]
 }
