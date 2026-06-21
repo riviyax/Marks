@@ -1,4 +1,4 @@
-# MMU Marks System
+# Marks System
 
 A simple **MMU Students Database** built using the **MERN stack**, with an integrated **WhatsApp bot** for automated weekly marks notifications and group management.
 
