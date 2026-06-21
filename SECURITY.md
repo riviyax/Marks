@@ -11,7 +11,7 @@ Only the latest version on `main` is actively supported with security updates. O
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in MMU Marks System (bot, client, or server), please report it privately rather than opening a public issue.
+If you discover a security vulnerability in Marks System (bot, client, or server), please report it privately rather than opening a public issue.
 
 You can report through either of the following:
 
