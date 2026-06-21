@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ayanakoji_X — Riviya_X Project</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ════════ SECTION 1 — HERO ════════ -->
+  <section id="s1">
+    <p class="eyebrow reveal in"><span class="dot"></span>Riviya_X Project</p>
+    <h1 class="hero-title reveal in d1">Ayanakoji<span>_X</span></h1>
+    <p class="hero-sub reveal in d2">The marks database that <strong>texts your team for you.</strong> Weekly scores, group invites, and live status — all running quietly in the background.</p>
+
+    <div class="orb-wrap reveal in d3">
+      <svg class="radar-svg" viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="110" cy="110" r="104" stroke="rgba(0,229,255,0.10)" stroke-width="1"/>
+        <circle cx="110" cy="110" r="82" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+        <circle cx="110" cy="110" r="60" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+        <path d="M110 110 L110 6 A104 104 0 0 1 200 160 Z" fill="url(#sweep)" opacity="0.55"/>
+        <defs>
+          <radialGradient id="sweep" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <line x1="110" y1="6" x2="110" y2="214" stroke="rgba(0,229,255,0.08)" stroke-width="1"/>
+        <line x1="6" y1="110" x2="214" y2="110" stroke="rgba(0,229,255,0.08)" stroke-width="1"/>
+      </svg>
+      <div class="orb">
+        <div class="orb-dot"></div>
+        <div class="orb-label">Online</div>
+      </div>
+    </div>
+
+    <div class="scroll-hint reveal in d4">
+      <span>SCROLL</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+  </section>
+
+  <!-- ════════ SECTION 2 — THE BRIDGE ════════ -->
+  <section id="s2">
+    <p class="eyebrow reveal">The problem</p>
+    <h2 class="bridge-title reveal d1">Marks live in a database.<br>Your team lives in <span class="accent">WhatsApp</span>.</h2>
+
+    <div class="bridge-flow reveal d2">
+      <div class="flow-card">
+        <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="#00E5FF" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 4v16"/></svg>
+        <span class="flow-label cyan-text">DATABASE</span>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-card">
+        <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="#7B9BB5" stroke-width="1.6"><rect x="4" y="2" width="16" height="20" rx="3"/><circle cx="12" cy="18" r="0.6" fill="#7B9BB5"/></svg>
+        <span class="flow-label">AYANAKOJI_X</span>
+      </div>
+      <span class="flow-arrow">&#8594;</span>
+      <div class="flow-card">
+        <svg class="flow-icon" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="1.6"><path d="M20 12a8 8 0 1 0-3.2 6.4L20 20l-1.4-3A8 8 0 0 0 20 12Z"/></svg>
+        <span class="flow-label green-text">WHATSAPP</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ SECTION 3 — REACTION DEMO (SIGNATURE) ════════ -->
+  <section id="s3">
+    <p class="eyebrow reveal">The signature feature</p>
+    <h2 class="demo-title reveal d1">Every command, acknowledged instantly.</h2>
+    <p class="demo-sub reveal d2">No more wondering if the bot saw your message. A reaction lands the second a command is read — even if the reply itself takes a few seconds.</p>
+
+    <div class="phone reveal d3">
+      <div class="phone-bar">
+        <div class="phone-avatar">MMU</div>
+        <div>
+          <div class="phone-name">Marks Bot</div>
+          <div class="phone-sub">online</div>
+        </div>
+      </div>
+
+      <div class="bubble-row">
+        <div class="bubble">
+          .markslist
+          <div class="bubble-reaction" id="reaction1"></div>
+        </div>
+      </div>
+
+      <div class="reply-row">
+        <div class="reply-bubble" id="reply1">
+          <strong>MMU Marks List</strong><br>
+          1. Rivith Abinidu — 17 marks<br>
+          2. Suraj Kasun — 29 marks<br>
+          &hellip;39 members total
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ SECTION 4 — DASHBOARD GLIMPSE ════════ -->
+  <section id="s4">
+    <p class="eyebrow reveal">The control room</p>
+    <h2 class="dash-title reveal d1">One dashboard. Every member.</h2>
+    <p class="dash-sub reveal d2">Search, sort, and message your whole team — or just one person — without opening WhatsApp at all.</p>
+
+    <div class="dash-card reveal d3">
+      <div class="dash-bar">
+        <div class="dash-dot close-dot"></div>
+        <div class="dash-dot minimize-dot"></div>
+        <div class="dash-dot expand-dot"></div>
+      </div>
+      <div class="dash-body">
+        <div class="dash-row">
+          <span class="dash-name">Rivith Abinidu — President</span>
+          <span class="dash-action-group">
+            <span class="dash-marks">17</span>
+            <span class="dash-btn">Send</span>
+          </span>
+        </div>
+        <div class="dash-row">
+          <span class="dash-name">Suraj Kasun — Secretary</span>
+          <span class="dash-action-group">
+            <span class="dash-marks">29</span>
+            <span class="dash-btn">Send</span>
+          </span>
+        </div>
+        <div class="dash-row">
+          <span class="dash-name">Not Selected — Vice President</span>
+          <span class="dash-action-group">
+            <span class="dash-marks">0</span>
+            <span class="dash-btn disabled-btn">Send</span>
+          </span>
+        </div>
+        <div class="dash-sendall">Send All (39)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ SECTION 5 — CLOSER ════════ -->
+  <section id="s5">
+    <p class="eyebrow reveal"><span class="dot"></span>Available now</p>
+    <h2 class="closer-title reveal d1">Stop copy-pasting<br>marks by hand.</h2>
+    <p class="closer-sub reveal d2">Ayanakoji_X handles the messaging, the grouping, and the reminders — so you handle everything else.</p>
+
+    <div class="price-card reveal d3">
+      <span class="price-label">One-time license</span>
+      <span class="price-value"><sup>$</sup>5</span>
+      <span class="price-note">Yours to keep &middot; no subscription</span>
+      
+      <div class="payment-methods">
+        <span class="pay-method ezcash">eZCash</span>
+        <span class="pay-method paypal">PayPal</span>
+      </div>
+
+      <a href="mailto:buy@riviyax.site?subject=Ayanakoji_X%20License%20Purchase" class="buy-button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px; vertical-align: -1px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Order via buy@riviyax.site
+      </a>
+    </div>
+
+    <div class="release-card reveal d3">
+      <span class="release-tag">v1.0.0</span>
+      <span class="release-text">Production Build &middot; <strong>Self-Hosted Engine</strong> &middot; Automated Cron Included</span>
+    </div>
+
+    <p class="footer-credit reveal d4">Built by <span>Riviya_X</span> &middot; Marks System</p>
+  </section>
+
+  <script>
+    // Scroll-reveal: sections animate in as they enter the viewport
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) entry.target.classList.add('in');
+      });
+    }, { threshold: 0.3 });
+    revealEls.forEach((el) => observer.observe(el));
+
+    // Section 3 signature animation: reaction + reply, looping while in view
+    const phoneSection = document.getElementById('s3');
+    const reactionEl   = document.getElementById('reaction1');
+    const replyEl      = document.getElementById('reply1');
+    let demoRunning = false;
+    let demoTimers  = [];
+
+    function clearDemoTimers() {
+      demoTimers.forEach(clearTimeout);
+      demoTimers = [];
+    }
+
+    function runDemoLoop() {
+      if (!demoRunning) return;
+      reactionEl.classList.remove('show');
+      replyEl.classList.remove('show');
+      reactionEl.textContent = '';
+
+      demoTimers.push(setTimeout(() => {
+        reactionEl.textContent = '\u23F3';
+        reactionEl.classList.add('show');
+      }, 500));
+
+      demoTimers.push(setTimeout(() => {
+        reactionEl.classList.remove('show');
+        void reactionEl.offsetWidth;
+        reactionEl.textContent = '\u2713';
+        reactionEl.classList.add('show');
+      }, 1700));
+
+      demoTimers.push(setTimeout(() => {
+        replyEl.classList.add('show');
+      }, 2100));
+
+      demoTimers.push(setTimeout(runDemoLoop, 5200));
+    }
+
+    const demoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && !demoRunning) {
+          demoRunning = true;
+          runDemoLoop();
+        } else if (!entry.isIntersecting && demoRunning) {
+          demoRunning = false;
+          clearDemoTimers();
+        }
+      });
+    }, { threshold: 0.5 });
+    demoObserver.observe(phoneSection);
+  </script>
+
+</body>
+</html>
