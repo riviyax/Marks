@@ -69,7 +69,7 @@ app.get("/", (req, res) => {
     <h1>Hello World!</h1>
     <br>This is the server side website for the Members API
     <br><a href="">Go To Main Site</a>
-    <br><a target="_blank" href="https://ggriviya.pages.dev">Go To Developer Page</a>
+    <br><a target="_blank" href="https://riviyax.site">Go To Developer Page</a>
   `);
 });
 

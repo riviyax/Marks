@@ -3,8 +3,7 @@ import MemberCard from "./MemberCard";
 import axios from "axios";
 import "../print.css";
 
-const BOT_API  = import.meta.env.VITE_BOT_URL;
-const GROUP_ID = "120363421064747833@g.us";
+const BOT_API = import.meta.env.VITE_BOT_URL;
 
 function Table() {
   const [members, setMembers]         = useState([]);
@@ -47,14 +46,15 @@ function Table() {
     }
   };
 
-  // Add selected members to group
+  // Add selected members to group.
+  // The bot is the source of truth for which group to use (set via its
+  // admin panel / config.json) — it never reads a groupId from this
+  // request, so we don't send one. If no group is configured on the bot
+  // side, the bot itself returns a 400 with a clear error, which we
+  // surface to the user below.
   const handleAddSelectedToGroup = async () => {
     if (selectedIds.size === 0) {
       alert("⚠️ No members selected.");
-      return;
-    }
-    if (!GROUP_ID) {
-      alert("⚠️ No Group ID configured. Add VITE_GROUP_ID to your .env");
       return;
     }
     const confirmed = window.confirm(
@@ -66,12 +66,12 @@ function Table() {
       setAddingSelected(true);
       const res = await axios.post(`${BOT_API}/api/bot/add-selected-to-group`, {
         memberIds: Array.from(selectedIds),
-        groupId: GROUP_ID,
       });
       alert(`✅ Done! Added: ${res.data.added} | Failed: ${res.data.failed}`);
       setSelectedIds(new Set());
     } catch (err) {
-      alert("❌ Failed to add members. Is the bot running?");
+      const serverMsg = err.response?.data?.error;
+      alert(serverMsg ? `❌ ${serverMsg}` : "❌ Failed to add members. Is the bot running?");
     } finally {
       setAddingSelected(false);
     }
@@ -210,7 +210,6 @@ function Table() {
                 <MemberCard
                   key={m._id}
                   member={m}
-                  groupId={GROUP_ID}
                   selected={selectedIds.has(m._id)}
                   onToggleSelect={toggleSelect}
                 />
@@ -230,7 +229,6 @@ function Table() {
               key={m._id}
               member={m}
               isMobile
-              groupId={GROUP_ID}
               selected={selectedIds.has(m._id)}
               onToggleSelect={toggleSelect}
             />

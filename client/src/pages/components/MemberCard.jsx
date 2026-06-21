@@ -8,7 +8,7 @@ import "../print.css";
 
 const BOT_API = import.meta.env.VITE_BOT_URL;
 
-function MemberCard({ member, isMobile = false, groupId, selected = false, onToggleSelect }) {
+function MemberCard({ member, isMobile = false, selected = false, onToggleSelect }) {
   const [openModal, setOpenModal]       = useState(false);
   const [memberData, setMemberData]     = useState(member);
   const [saving, setSaving]             = useState(false);
@@ -66,16 +66,24 @@ function MemberCard({ member, isMobile = false, groupId, selected = false, onTog
     finally { setSending(false); }
   };
 
+  // The bot is the source of truth for which group to add into (configured
+  // via its own admin panel / config.json) — it never reads a groupId from
+  // this request, so we don't send one or gate on it client-side. If no
+  // group is set on the bot, the bot itself returns a clear 400 error,
+  // which we now surface to the user instead of guessing client-side.
   const handleAddToGroup = async (e) => {
     e.stopPropagation();
     if (!memberData.whatsappNumber) { alert("⚠️ No WhatsApp number."); return; }
-    if (!groupId) { alert("⚠️ No Group ID in .env"); return; }
     try {
       setAddingGroup(true);
-      await axios.post(`${BOT_API}/api/bot/add-to-group`, { memberId: memberData._id, groupId });
+      await axios.post(`${BOT_API}/api/bot/add-to-group`, { memberId: memberData._id });
       alert(`✅ ${memberData.name} added to group!`);
-    } catch { alert("❌ Failed to add to group."); }
-    finally { setAddingGroup(false); }
+    } catch (err) {
+      const serverMsg = err.response?.data?.error;
+      alert(serverMsg ? `❌ ${serverMsg}` : "❌ Failed to add to group. Is the bot running?");
+    } finally {
+      setAddingGroup(false);
+    }
   };
 
   const toggle      = (cmd) => editor && editor.chain().focus()[cmd]().run();
