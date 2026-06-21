@@ -1,5 +1,6 @@
 // ============================================================
-//  Ayanakoji_X | Marks Bot  —  Baileys + node-cron + Express
+//   Ayanakoji_X | Marks Bot — Baileys + node-cron + Express
+//   Features: WhatsApp bot, group management, admin panel
 // ============================================================
 
 const {
@@ -9,89 +10,129 @@ const {
   fetchLatestBaileysVersion,
 } = require("@whiskeysockets/baileys");
 
-const { Boom } = require("@hapi/boom");
-const cron     = require("node-cron");
-const axios    = require("axios");
-const pino     = require("pino");
-const readline = require("readline");
-const express  = require("express");
-const cors     = require("cors");
-const fs       = require("fs");
-const path     = require("path");
+const { Boom }   = require("@hapi/boom");
+const cron       = require("node-cron");
+const axios      = require("axios");
+const pino       = require("pino");
+const readline   = require("readline");
+const express    = require("express");
+const cors       = require("cors");
+const fs         = require("fs");
+const path       = require("path");
+const { spawn }  = require("child_process");
 require("dotenv").config();
 
 // ── Config ────────────────────────────────────────────────
-const PORT          = process.env.BOT_PORT          || 3001;
-const API_BASE      = process.env.API_BASE          || "http://localhost:3000/api/members";
-const MEMBER_VIEW   = process.env.MEMBER_VIEW_BASE || "https://mmumarks.vercel.app/memberview";
+const PORT          = process.env.BOT_PORT          || 3000;
+const API_BASE      = process.env.API_BASE          || "";
+const MEMBER_VIEW   = process.env.MEMBER_VIEW_BASE || "";
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE    || "0 9 * * 1";
-const GROUP_ID      = process.env.GROUP_ID          || "";
 const IMAGE_PATH    = path.resolve(__dirname, "images/caption.png");
+const CONFIG_PATH   = path.resolve(__dirname, "config.json");
+
+// ── Config file (group ID + admin password) ───────────────
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"));
+    }
+  } catch {}
+  return { groupId: "", adminPassword: "mmu2024" };
+}
+
+function saveConfig(data) {
+  const current = loadConfig();
+  const updated = { ...current, ...data };
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2));
+  return updated;
+}
 
 let sock         = null;
 let botStartTime = Date.now();
+let pairingRequested = false;
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (t) => new Promise((r) => rl.question(t, r));
 
-// ── Suppress noisy Baileys errors ─────────────────────────
-const originalStderrWrite = process.stderr.write.bind(process.stderr);
-process.stderr.write = (chunk, ...args) => {
-  const msg = typeof chunk === "string" ? chunk : chunk.toString();
-  if (
-    msg.includes("Bad MAC") ||
-    msg.includes("Key used already or never filled") ||
-    msg.includes("Failed to decrypt message") ||
-    msg.includes("Session error") ||
-    msg.includes("Closing open session") ||
-    msg.includes("Closing session: SessionEntry")
-  ) return true;
-  return originalStderrWrite(chunk, ...args);
-};
-// ─────────────────────────────────────────────────────────
+// ── Cloudflare Tunnel ─────────────────────────────────────
+const CLOUDFLARE_TOKEN = process.env.CLOUDFLARE_TOKEN || "";
 
-// ── Helpers ───────────────────────────────────────────────
-
-function displayName(member) {
-  return member.grade?.trim()
-    ? `${member.name} - ${member.grade}`
-    : member.name;
+if (!CLOUDFLARE_TOKEN || CLOUDFLARE_TOKEN === "PASTE_YOUR_ACTUAL_TOKEN_HERE") {
+  console.warn("No Cloudflare token set — tunnel disabled.");
+} else {
+  console.log("Starting Cloudflare Tunnel...");
+  const tunnel = spawn("npx", ["cloudflared", "tunnel", "--no-autoupdate", "run", "--token", CLOUDFLARE_TOKEN], {
+    shell: true,
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+  });
+  tunnel.stdout.on("data", (d) => {
+    const log = d.toString();
+    if (log.includes("Registered tunnel connection") || log.includes("Connection established"))
+      console.log("[Cloudflare] Tunnel established!");
+  });
+  tunnel.stderr.on("data", (d) => {
+    const log = d.toString();
+    if (log.includes("ERR") || log.includes("Infrastructure error"))
+      console.error(`[Cloudflare] ${log.trim()}`);
+  });
+  tunnel.on("close", (code) => console.log(`[Cloudflare] Tunnel exited (${code})`));
 }
 
+// ── Suppress noisy Baileys stderr ─────────────────────────
+const _stderr = process.stderr.write.bind(process.stderr);
+process.stderr.write = (chunk, ...args) => {
+  const msg = typeof chunk === "string" ? chunk : chunk.toString();
+  if (["Bad MAC","Key used already","Failed to decrypt","Session error","Closing open session","Closing session:"].some(s => msg.includes(s)))
+    return true;
+  return _stderr(chunk, ...args);
+};
+
+// ── Helpers ───────────────────────────────────────────────
+function displayName(m) {
+  return m.grade?.trim() ? `${m.name} - ${m.grade}` : m.name;
+}
 function hasImage() {
   return fs.existsSync(IMAGE_PATH);
+}
+function getGroupId() {
+  return loadConfig().groupId || process.env.GROUP_ID || "";
 }
 
 async function saveContact(jid, member) {
   try {
     const name   = displayName(member);
     const number = member.whatsappNumber.replace(/\D/g, "");
-    const vcard  =
-      `BEGIN:VCARD\n` +
-      `VERSION:3.0\n` +
-      `FN:${name}\n` +
-      `TEL;type=CELL;type=VOICE;waid=${number}:+${number}\n` +
-      `END:VCARD`;
-    await sock.sendMessage(jid, {
-      contacts: { displayName: name, contacts: [{ vcard }] },
-    });
-  } catch {
-    // Non-critical
-  }
+    const vcard  = `BEGIN:VCARD\nVERSION:3.0\nFN:${name}\nTEL;type=CELL;type=VOICE;waid=${number}:+${number}\nEND:VCARD`;
+    await sock.sendMessage(jid, { contacts: { displayName: name, contacts: [{ vcard }] } });
+  } catch {}
 }
 
 async function dispatchMessage(jid, text) {
   if (hasImage()) {
-    const imageBuffer = fs.readFileSync(IMAGE_PATH);
-    await sock.sendMessage(jid, { image: imageBuffer, caption: text });
+    const buf = fs.readFileSync(IMAGE_PATH);
+    await sock.sendMessage(jid, { image: buf, caption: text });
   } else {
     await sock.sendMessage(jid, { text });
   }
 }
 
+// ── Reactions (ack a command immediately, since API calls can be slow) ───
+async function reactTo(msgKey, emojiIcon) {
+  try {
+    await sock.sendMessage(msgKey.remoteJid, { react: { text: emojiIcon, key: msgKey } });
+  } catch {}
+}
+// Clear a reaction by sending an empty string
+async function clearReaction(msgKey) {
+  try {
+    await sock.sendMessage(msgKey.remoteJid, { react: { text: "", key: msgKey } });
+  } catch {}
+}
+
 function buildMessage(member) {
   const profileLink = `${MEMBER_VIEW}?id=${member._id}`;
-  const gradeInfo   = member.grade    ? `\n   *Grade* : ${member.grade}`    : "";
+  const gradeInfo   = member.grade    ? `\n   *Grade* : ${member.grade}`       : "";
   const catInfo     = member.category ? `\n   *Category* : ${member.category}` : "";
   return (
     `*Marks Bot | Mudalians' Media Unit*\n\n` +
@@ -112,59 +153,42 @@ async function isValidWhatsAppNumber(number) {
     const clean = number.replace(/\D/g, "");
     const [result] = await sock.onWhatsApp(`${clean}@s.whatsapp.net`);
     return result?.exists === true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
 async function getGroupInviteLink(groupId) {
   try {
     const code = await sock.groupInviteCode(groupId);
-    console.log(`Invite link fetched successfully for group: ${groupId}`);
     return `https://chat.whatsapp.com/${code}`;
   } catch (err) {
-    console.error(`Failed to get invite link for group ${groupId}: ${err.message}`);
-    console.error(`Make sure the bot is a group admin.`);
+    console.error(`Failed to get invite link: ${err.message}`);
     return null;
   }
 }
 
-/**
- * Searches the dynamic data trees inside Baileys responses or error contents 
- * to capture the private invite code accurately.
- */
 function extractPersonalInviteLink(content, jid) {
   if (!content) return null;
   try {
-    // Case 1: content is a direct status array returned on a clean response resolve
     if (Array.isArray(content)) {
-      const target = content.find(item => item.jid === jid || item.id === jid);
+      const target = content.find(i => i.jid === jid || i.id === jid);
       if (target?.content?.length) {
-        const inviteNode = target.content.find(node => node.tag === 'invite');
-        if (inviteNode?.attrs?.code) {
-          return `https://chat.whatsapp.com/invite/${inviteNode.attrs.code}`;
-        }
+        const inv = target.content.find(n => n.tag === "invite");
+        if (inv?.attrs?.code) return `https://chat.whatsapp.com/invite/${inv.attrs.code}`;
       }
     }
-    
-    // Case 2: content is nested under an error structure object array
     const searchTarget = Array.isArray(content) ? content : content.content || [];
-    const groupUpdateNode = searchTarget.find(node => node.tag === 'group');
-    if (groupUpdateNode && Array.isArray(groupUpdateNode.content)) {
-      const addNode = groupUpdateNode.content.find(node => node.tag === 'add');
+    const groupNode = searchTarget.find(n => n.tag === "group");
+    if (groupNode && Array.isArray(groupNode.content)) {
+      const addNode = groupNode.content.find(n => n.tag === "add");
       if (addNode && Array.isArray(addNode.content)) {
-        const userNode = addNode.content.find(node => node.tag === 'user' && node.attrs?.jid === jid);
+        const userNode = addNode.content.find(n => n.tag === "user" && n.attrs?.jid === jid);
         if (userNode && Array.isArray(userNode.content)) {
-          const inviteNode = userNode.content.find(node => node.tag === 'invite');
-          if (inviteNode && inviteNode.attrs?.code) {
-            return `https://chat.whatsapp.com/invite/${inviteNode.attrs.code}`;
-          }
+          const inv = userNode.content.find(n => n.tag === "invite");
+          if (inv?.attrs?.code) return `https://chat.whatsapp.com/invite/${inv.attrs.code}`;
         }
       }
     }
-  } catch (parseErr) {
-    console.error("Failed parsing logic during invite verification:", parseErr.message);
-  }
+  } catch {}
   return null;
 }
 
@@ -201,7 +225,6 @@ function formatUptime() {
 }
 
 // ── Command Handlers ──────────────────────────────────────
-
 async function handleAbout(jid) {
   const text =
     `*Marks Bot | System Status*\n\n` +
@@ -230,12 +253,11 @@ async function handleMarksList(jid) {
     sorted.forEach((m, i) => {
       const grade = m.grade ? ` (${m.grade})` : "";
       list += `${i + 1}. *${m.name}*${grade}\n`;
-      list += `     Marks: *${m.marks}* |  ${m.rank}\n`;
-      if (m.category) list += `     ${m.category}\n`;
+      list += `      Marks: *${m.marks}* |  ${m.rank}\n`;
+      if (m.category) list += `      ${m.category}\n`;
       list += "\n";
     });
-    list += `Total: ${members.length} members\n`;
-    list += `_MMU Marks Bot_`;
+    list += `Total: ${members.length} members\n_MMU Marks Bot_`;
     await dispatchMessage(jid, list);
   } catch {
     await sock.sendMessage(jid, { text: "Failed to fetch marks list." });
@@ -245,15 +267,13 @@ async function handleMarksList(jid) {
 async function handleMarksMember(jid, query) {
   try {
     const { data: members } = await axios.get(API_BASE, { timeout: 15000 });
-    const match = members.find((m) =>
-      m.name.toLowerCase().includes(query.toLowerCase())
-    );
+    const match = members.find(m => m.name.toLowerCase().includes(query.toLowerCase()));
     if (!match) {
       await sock.sendMessage(jid, { text: `No member found for "*${query}*".\nTry .markslist to see all names.` });
       return;
     }
     const profileLink = `${MEMBER_VIEW}?id=${match._id}`;
-    const gradeInfo   = match.grade    ? `\n   *Grade* : ${match.grade}`    : "";
+    const gradeInfo   = match.grade    ? `\n   *Grade* : ${match.grade}`       : "";
     const catInfo     = match.category ? `\n   *Category* : ${match.category}` : "";
     const text =
       `*Member Details*\n\n` +
@@ -274,7 +294,7 @@ async function sendWeeklyMarks() {
   try {
     const { data: members } = await axios.get(API_BASE, { timeout: 30000 });
     if (!Array.isArray(members)) return { success: false, message: "Invalid API data." };
-    const eligible = members.filter((m) => m.whatsappNumber?.trim());
+    const eligible = members.filter(m => m.whatsappNumber?.trim());
     skippedCount = members.length - eligible.length;
     console.log(`Sending to ${eligible.length} members (${skippedCount} skipped)...`);
     for (const member of eligible) {
@@ -283,7 +303,7 @@ async function sendWeeklyMarks() {
         await dispatchMessage(jid, buildMessage(member));
         console.log(`Sent -> ${displayName(member)}`);
         sentCount++;
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 1500));
       } catch (err) {
         console.error(`Failed -> ${member.name}: ${err.message}`);
         skippedCount++;
@@ -294,6 +314,127 @@ async function sendWeeklyMarks() {
   } catch (err) {
     return { sent: sentCount, skipped: skippedCount, error: err.message };
   }
+}
+
+// ── Group add helpers ─────────────────────────────────────
+async function triggerInviteFallback(member, jid, name, groupId, originError, res) {
+  console.log(`Privacy restriction for ${name}. Sending DM invite...`);
+  let link = extractPersonalInviteLink(originError, jid) || await getGroupInviteLink(groupId);
+
+  if (link) {
+    try {
+      await sock.sendMessage(jid, {
+        text:
+          `*Group Invitation | MMU*\n\n` +
+          `Hello *${member.name}*,\n` +
+          `We couldn't add you directly due to your privacy settings.\n\n` +
+          `Please join using this link:\n${link}\n\n` +
+          `_MMU Marks Bot_`
+      });
+      const gradeInfo = member.grade    ? `\n   *Grade* : ${member.grade}`       : "";
+      const catInfo   = member.category ? `\n   *Category* : ${member.category}` : "";
+      await dispatchMessage(groupId,
+        `*Group Add Report*\n\n` +
+        `Invite Link Sent (Privacy Restricted):\n` +
+        `   *Name* : ${member.name}${gradeInfo}${catInfo}\n` +
+        `   *Marks* : [ *${member.marks}* ]\n` +
+        `   *Position* : ${member.rank}\n\n` +
+        `   A join link has been sent to their DM.\n\n` +
+        `_MMU Marks Bot_`
+      );
+      return res.json({ success: true, status: "invited", message: "Invite link sent to DM." });
+    } catch (dmErr) {
+      return res.json({ success: false, status: "dm_failed", message: `Could not send DM to ${name}` });
+    }
+  }
+  return res.json({ success: false, status: "invite_failed", message: "Privacy restriction — link generation failed." });
+}
+
+// ── Message text + command extraction ─────────────────────
+// Unwraps ephemeral / view-once / edited message containers that WhatsApp
+// (especially inside groups with disappearing messages enabled) wraps the
+// real message in. Without this, msg.message.conversation is undefined and
+// the command parser silently sees an empty string — which looks exactly
+// like "commands don't work in groups".
+function unwrapMessage(message) {
+  if (!message) return null;
+  if (message.ephemeralMessage)            return unwrapMessage(message.ephemeralMessage.message);
+  if (message.viewOnceMessage)             return unwrapMessage(message.viewOnceMessage.message);
+  if (message.viewOnceMessageV2)           return unwrapMessage(message.viewOnceMessageV2.message);
+  if (message.viewOnceMessageV2Extension)  return unwrapMessage(message.viewOnceMessageV2Extension.message);
+  if (message.documentWithCaptionMessage)  return unwrapMessage(message.documentWithCaptionMessage.message);
+  if (message.editedMessage)               return unwrapMessage(message.editedMessage.message);
+  return message;
+}
+
+function extractText(rawMessage) {
+  const message = unwrapMessage(rawMessage);
+  if (!message) return "";
+  return (
+    message.conversation ||
+    message.extendedTextMessage?.text ||
+    message.imageMessage?.caption ||
+    message.videoMessage?.caption ||
+    ""
+  ).trim();
+}
+
+// Runs a parsed command, reacting immediately so the user sees the bot
+// received it (API calls behind .markslist / .marks can take a few seconds).
+async function runCommand(jid, msgKey, cmd, text) {
+  await reactTo(msgKey, "⏳");
+  try {
+    if (cmd === ".about") {
+      await handleAbout(jid);
+    } else if (cmd === ".markslist") {
+      await handleMarksList(jid);
+    } else if (cmd.startsWith(".marks ")) {
+      const query = text.slice(7).trim();
+      query
+        ? await handleMarksMember(jid, query)
+        : await sock.sendMessage(jid, { text: "Usage: `.marks MemberName`" });
+    } else {
+      return; // not a recognized command — leave no reaction
+    }
+    await reactTo(msgKey, "✓");
+  } catch (err) {
+    console.error(`Command error: ${err.message}`);
+    await reactTo(msgKey, "✗");
+  }
+}
+
+// Shared upsert handler used by both the initial connection and the
+// admin-panel re-pair connection, so command/group behavior never drifts
+// between the two code paths.
+function registerMessageHandler(sockInstance) {
+  sockInstance.ev.on("messages.upsert", async ({ messages, type }) => {
+    if (type !== "notify") return;
+    for (const msg of messages) {
+      if (!msg.message) continue;
+      if (msg.key.remoteJid === "status@broadcast") continue;
+
+      const isGroup = msg.key.remoteJid?.endsWith("@g.us");
+      const botJid  = sockInstance.user?.id.split(":")[0] + "@s.whatsapp.net";
+      const isSelfChat = msg.key.remoteJid === botJid;
+
+      // Only ignore the bot's own outgoing messages in 1:1 chats. In groups,
+      // fromMe simply means "the bot sent this earlier" and must never be
+      // used to decide whether to process incoming commands from others —
+      // the previous logic accidentally let group-quirks fall through here
+      // too, which is part of why group commands looked broken.
+      if (msg.key.fromMe && !isSelfChat && !isGroup) continue;
+      if (msg.key.fromMe && isGroup) continue; // ignore bot's own group sends
+
+      const text = extractText(msg.message);
+      if (!text || !text.startsWith(".")) continue;
+
+      const jid = msg.key.remoteJid;
+      const cmd = text.toLowerCase();
+      console.log(`Command: "${text}" ${isGroup ? "(group)" : "(dm)"}`);
+
+      await runCommand(jid, msg.key, cmd, text);
+    }
+  });
 }
 
 // ── WhatsApp Connect ──────────────────────────────────────
@@ -309,7 +450,8 @@ async function connectToWhatsApp() {
     getMessage: async () => undefined,
   });
 
-  if (!sock.authState.creds.registered) {
+  if (!sock.authState.creds.registered && !pairingRequested) {
+    pairingRequested = true;
     console.log("\nPairing sequence started...");
     const phone   = await question("Enter phone with country code (e.g. 94771234567): ");
     const cleaned = phone.replace(/\D/g, "");
@@ -324,42 +466,7 @@ async function connectToWhatsApp() {
 
   sock.ev.on("creds.update", saveCreds);
 
-  sock.ev.on("messages.upsert", async ({ messages, type }) => {
-    if (type !== "notify") return;
-
-    for (const msg of messages) {
-      if (msg.key.remoteJid === "status@broadcast") continue;
-
-      const botJid     = sock.user?.id.split(":")[0] + "@s.whatsapp.net";
-      const isSelfChat = msg.key.remoteJid === botJid;
-      if (msg.key.fromMe && !isSelfChat) continue;
-
-      const text = (
-        msg.message?.conversation ||
-        msg.message?.extendedTextMessage?.text || ""
-      ).trim();
-      if (!text.startsWith(".")) continue;
-
-      const jid = msg.key.remoteJid;
-      const cmd = text.toLowerCase();
-      console.log(`Command: "${text}"`);
-
-      try {
-        if (cmd === ".about") {
-          await handleAbout(jid);
-        } else if (cmd === ".markslist") {
-          await handleMarksList(jid);
-        } else if (cmd.startsWith(".marks ")) {
-          const query = text.slice(7).trim();
-          query
-            ? await handleMarksMember(jid, query)
-            : await sock.sendMessage(jid, { text: "Usage: `.marks MemberName`\nExample: `.marks Helika`" });
-        }
-      } catch (err) {
-        console.error(`Command error: ${err.message}`);
-      }
-    }
-  });
+  registerMessageHandler(sock);
 
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
@@ -368,15 +475,16 @@ async function connectToWhatsApp() {
       console.log(`Disconnected (reason: ${reason})`);
       if (reason === DisconnectReason.loggedOut) {
         console.log("Logged out. Delete auth_info and restart.");
+        sock = null;
       } else {
         console.log("Reconnecting in 3s...");
+        pairingRequested = false;
         setTimeout(connectToWhatsApp, 3000);
       }
     }
     if (connection === "open") {
       botStartTime = Date.now();
       console.log("Bot connected!");
-      console.log(`Image: ${hasImage() ? "Found" : "Missing — place caption.png in images/"}`);
       try {
         const userJid = sock.user.id.split(":")[0] + "@s.whatsapp.net";
         await sock.sendMessage(userJid, {
@@ -385,7 +493,6 @@ async function connectToWhatsApp() {
             `Status    : Operational\n` +
             `Image     : ${hasImage() ? "Loaded" : "Missing"}\n` +
             `Next blast: ${getNextRunTime()}\n\n` +
-            `Commands: .about | .markslist | .marks Name\n\n` +
             `_Type .about for full status_`
         });
       } catch {}
@@ -397,6 +504,143 @@ async function connectToWhatsApp() {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static(__dirname));
+
+app.get("/", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+
+// Bot status
+app.get("/api/bot/status", (req, res) => {
+  const cfg = loadConfig();
+  res.json({
+    connected:   !!sock,
+    uptime:      formatUptime(),
+    nextBlast:   getNextRunTime(),
+    imageLoaded: hasImage(),
+    botSubheading: process.env.BOT_SUBHEADING || "SampleBot",
+    groupId:     cfg.groupId || "",
+  });
+});
+
+// Auth: verify admin password
+app.post("/api/admin/verify", (req, res) => {
+  const { password } = req.body;
+  const cfg = loadConfig();
+  if (password === cfg.adminPassword) return res.json({ success: true });
+  return res.status(401).json({ success: false, error: "Wrong password." });
+});
+
+// Auth: change password
+app.post("/api/admin/change-password", (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!newPassword || newPassword.length < 4)
+    return res.status(400).json({ error: "New password must be at least 4 characters." });
+  const cfg = loadConfig();
+  if (currentPassword !== cfg.adminPassword)
+    return res.status(401).json({ error: "Current password incorrect." });
+  saveConfig({ adminPassword: newPassword });
+  return res.json({ success: true });
+});
+
+// Logout: delete auth folder and disconnect
+app.post("/api/admin/logout", (req, res) => {
+  const { password } = req.body;
+  const cfg = loadConfig();
+  if (password !== cfg.adminPassword) return res.status(401).json({ error: "Wrong password." });
+  try {
+    if (sock) {
+      try { sock.logout(); } catch {}
+      sock = null;
+    }
+    const authPath = path.resolve(__dirname, "auth_info");
+    if (fs.existsSync(authPath)) {
+      fs.rmSync(authPath, { recursive: true, force: true });
+      console.log("auth_info deleted via admin panel.");
+    }
+    pairingRequested = false;
+    return res.json({ success: true, message: "Logged out and auth cleared." });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Pair: request pairing code for a phone number
+app.post("/api/admin/pair", async (req, res) => {
+  const { phone, password } = req.body;
+  const cfg = loadConfig();
+  if (password !== cfg.adminPassword) return res.status(401).json({ error: "Wrong password." });
+  if (!phone) return res.status(400).json({ error: "Missing phone number." });
+
+  try {
+    // Reconnect with fresh auth
+    const { state, saveCreds } = await useMultiFileAuthState("auth_info");
+    const { version } = await fetchLatestBaileysVersion();
+
+    sock = makeWASocket({
+      version,
+      auth: state,
+      logger: pino({ level: "silent" }),
+      printQRInTerminal: false,
+      getMessage: async () => undefined,
+    });
+    sock.ev.on("creds.update", saveCreds);
+    sock.ev.on("connection.update", async (update) => {
+      const { connection, lastDisconnect } = update;
+      if (connection === "open") {
+        botStartTime = Date.now();
+        console.log("Bot connected after pairing!");
+        try {
+          const userJid = sock.user.id.split(":")[0] + "@s.whatsapp.net";
+          await sock.sendMessage(userJid, {
+            text: `*Ayanakoji_X | Online*\n\nPaired successfully via admin panel.\nNext blast: ${getNextRunTime()}`
+          });
+        } catch {}
+      }
+      if (connection === "close") {
+        const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+        if (reason !== DisconnectReason.loggedOut) {
+          setTimeout(connectToWhatsApp, 3000);
+        } else { sock = null; }
+      }
+    });
+
+    registerMessageHandler(sock);
+
+    await new Promise(r => setTimeout(r, 2000));
+    const cleaned = phone.replace(/\D/g, "");
+    let code = await sock.requestPairingCode(cleaned);
+    code = code?.match(/.{1,4}/g)?.join("-") || code;
+    console.log(`Pairing code issued for ${cleaned}: ${code}`);
+    return res.json({ success: true, code });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Groups: fetch all groups the bot is in
+app.get("/api/bot/groups", async (req, res) => {
+  if (!sock) return res.status(503).json({ error: "Bot not connected." });
+  try {
+    const groups = await sock.groupFetchAllParticipating();
+    const list = Object.values(groups).map(g => ({
+      id:      g.id,
+      name:    g.subject,
+      members: g.participants?.length || 0,
+    }));
+    return res.json(list);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// Groups: set active group
+app.post("/api/bot/set-group", (req, res) => {
+  const { groupId, password } = req.body;
+  const cfg = loadConfig();
+  if (password !== cfg.adminPassword) return res.status(401).json({ error: "Wrong password." });
+  if (!groupId) return res.status(400).json({ error: "Missing groupId." });
+  saveConfig({ groupId });
+  return res.json({ success: true, groupId });
+});
 
 // Send to single member
 app.post("/api/bot/send", async (req, res) => {
@@ -422,12 +666,13 @@ app.post("/api/bot/send-all", async (req, res) => {
   return result.error ? res.status(500).json(result) : res.json(result);
 });
 
-// Add single member to group (Fixed Invitation Delivery Fallbacks)
-// Add single member to group (Fixed Error Handler Logic)
+// Add single member to group
 app.post("/api/bot/add-to-group", async (req, res) => {
-  const { memberId, groupId } = req.body;
-  if (!sock)                 return res.status(503).json({ error: "Bot not connected." });
-  if (!memberId || !groupId) return res.status(400).json({ error: "Missing memberId or groupId." });
+  const { memberId } = req.body;
+  const groupId = getGroupId();
+  if (!sock)    return res.status(503).json({ error: "Bot not connected." });
+  if (!memberId) return res.status(400).json({ error: "Missing memberId." });
+  if (!groupId)  return res.status(400).json({ error: "No group selected. Set a group in the admin panel." });
 
   try {
     const { data: member } = await axios.get(`${API_BASE}/${memberId}`, { timeout: 15000 });
@@ -439,97 +684,29 @@ app.post("/api/bot/add-to-group", async (req, res) => {
 
     const valid = await isValidWhatsAppNumber(number);
     if (!valid) {
-      console.log(`Invalid WA number: ${member.name} (${number})`);
       await dispatchMessage(groupId,
-        `*Group Add Report*\n\n` +
-        `Could not add member:\n` +
-        `   *${name}* — Invalid or unregistered WhatsApp number (${number})\n\n` +
-        `_MMU Marks Bot_`
+        `*Group Add Report*\n\nCould not add member:\n   *${name}* — Invalid or unregistered WhatsApp number\n\n_MMU Marks Bot_`
       );
       return res.json({ success: false, status: "invalid_number", message: "Invalid WhatsApp number." });
     }
 
     await saveContact(jid, member);
 
-    // Dedicated fallback handler for sending private links
-    const triggerInviteFallback = async (originError) => {
-      console.log(`Privacy restriction or add failure detected for ${name}. Sending DM invite...`);
-      
-      // Try to find a specific invite code inside the response first
-      let targetedInviteLink = extractPersonalInviteLink(originError, jid);
-      
-      // If Baileys didn't extract a unique one, generate a standard group invite link manually
-      if (!targetedInviteLink) {
-        console.log(`No direct user invite code found. Generating general group invite link...`);
-        targetedInviteLink = await getGroupInviteLink(groupId);
-      }
-
-      if (targetedInviteLink) {
-        try {
-          await sock.sendMessage(jid, {
-            text:
-              `*Group Invitation | MMU*\n\n` +
-              `Hello *${member.name}*,\n` +
-              `We couldn't add you directly due to your privacy settings.\n\n` +
-              `Please join using this link:\n${targetedInviteLink}\n\n` +
-              `_MMU Marks Bot_`
-          });
-          console.log(`Invite DM successfully delivered to ${name}`);
-
-          const gradeInfo = member.grade    ? `\n   *Grade* : ${member.grade}`    : "";
-          const catInfo   = member.category ? `\n   *Category* : ${member.category}` : "";
-          
-          // Post the Invite Report to the group instead of the "Successfully Added" message
-          await dispatchMessage(groupId,
-            `*Group Add Report*\n\n` +
-            `Invite Link Sent (Privacy Restricted):\n` +
-            `   *Name* : ${member.name}${gradeInfo}${catInfo}\n` +
-            `   *Marks* : [ *${member.marks}* ]\n` +
-            `   *Position* : ${member.rank}\n\n` +
-            `   Privacy settings prevented direct add.\n` +
-            `   A join link has been sent to their DM.\n\n` +
-            `_MMU Marks Bot_`
-          );
-          return res.json({ success: true, status: "invited", message: "Invite link sent to DM." });
-        } catch (dmErr) {
-          console.error("Failed to send DM to member:", dmErr.message);
-          return res.json({ success: false, status: "dm_failed", message: `Could not send DM to ${name}` });
-        }
-      } else {
-        return res.json({ success: false, status: "invite_failed", message: "Privacy restriction encountered — link generation failed." });
-      }
-    };
-
     try {
       const response = await sock.groupParticipantsUpdate(groupId, [jid], "add");
-      console.log("Baileys Raw Response payload:", JSON.stringify(response));
-      
-      // FIX: Check if ANY item in the response contains a 403 status code
+      console.log("Baileys response:", JSON.stringify(response));
       if (response && Array.isArray(response)) {
-        const hasPrivacyBlock = response.some(item => item.status === '403' || parseInt(item.status) === 403);
-        if (hasPrivacyBlock) {
-          return await triggerInviteFallback(response);
-        }
+        const restricted = response.some(i => i.status === "403" || parseInt(i.status) === 403);
+        if (restricted) return await triggerInviteFallback(member, jid, name, groupId, response, res);
       }
-
-      // If we got past the response array check, it was added successfully 
-      console.log(`Added ${name} directly to group`);
-      const gradeInfo = member.grade    ? `\n   *Grade* : ${member.grade}`    : "";
+      const gradeInfo = member.grade    ? `\n   *Grade* : ${member.grade}`       : "";
       const catInfo   = member.category ? `\n   *Category* : ${member.category}` : "";
-      
       await dispatchMessage(groupId,
-        `*New Member Added*\n\n` +
-        `Successfully Added:\n` +
-        `   *Name* : ${member.name}${gradeInfo}${catInfo}\n` +
-        `   *Marks* : [ *${member.marks}* ]\n` +
-        `   *Position* : ${member.rank}\n\n` +
-        `_MMU Marks Bot_`
+        `*New Member Added*\n\nSuccessfully Added:\n   *Name* : ${member.name}${gradeInfo}${catInfo}\n   *Marks* : [ *${member.marks}* ]\n   *Position* : ${member.rank}\n\n_MMU Marks Bot_`
       );
       return res.json({ success: true, status: "added", message: `${name} added!` });
-
     } catch (addErr) {
-      // Handles classic thrown rejections
-      return await triggerInviteFallback(addErr);
+      return await triggerInviteFallback(member, jid, name, groupId, addErr, res);
     }
   } catch (err) {
     return res.status(500).json({ error: "Internal error.", details: err.message });
@@ -538,154 +715,75 @@ app.post("/api/bot/add-to-group", async (req, res) => {
 
 // Add selected members to group (bulk)
 app.post("/api/bot/add-selected-to-group", async (req, res) => {
-  const { memberIds, groupId } = req.body;
-  if (!sock)                          return res.status(503).json({ error: "Bot not connected." });
-  if (!memberIds?.length || !groupId) return res.status(400).json({ error: "Missing memberIds or groupId." });
+  const { memberIds } = req.body;
+  const groupId = getGroupId();
+  if (!sock)              return res.status(503).json({ error: "Bot not connected." });
+  if (!memberIds?.length) return res.status(400).json({ error: "Missing memberIds." });
+  if (!groupId)           return res.status(400).json({ error: "No group selected. Set a group in the admin panel." });
 
-  const addedList   = [];
-  const invitedList = [];
-  const invalidList = [];
-
+  const addedList = [], invitedList = [], invalidList = [];
   let backupInviteLink = null;
 
   for (const memberId of memberIds) {
     try {
       const { data: member } = await axios.get(`${API_BASE}/${memberId}`, { timeout: 10000 });
-
       if (!member?.whatsappNumber?.trim()) {
         invalidList.push({ name: member?.name || memberId, number: "—", reason: "No number saved" });
         continue;
       }
-
       const number = member.whatsappNumber.replace(/\D/g, "");
       const jid    = `${number}@s.whatsapp.net`;
       const name   = displayName(member);
-
-      const valid = await isValidWhatsAppNumber(number);
+      const valid  = await isValidWhatsAppNumber(number);
       if (!valid) {
         invalidList.push({ name: member.name, number, reason: "Not on WhatsApp" });
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 500));
         continue;
       }
-
       await saveContact(jid, member);
-
       try {
         const response = await sock.groupParticipantsUpdate(groupId, [jid], "add");
-        console.log(`Raw bulk response for ${name}:`, JSON.stringify(response));
-        
-        // FIX: Scan if ANY item inside the response status array contains a 403 status code
-        let isRestricted = false;
-        if (response && Array.isArray(response)) {
-          isRestricted = response.some(item => item.status === '403' || parseInt(item.status) === 403);
-        }
-
-        if (isRestricted) {
-          throw { content: response, message: "Privacy restricted state arrays caught" };
-        }
-
-        console.log(`Added ${name}`);
+        const restricted = Array.isArray(response) && response.some(i => i.status === "403" || parseInt(i.status) === 403);
+        if (restricted) throw { content: response, message: "Privacy restricted" };
         addedList.push(member);
-
       } catch (addErr) {
-        console.log(`Add variant check flagged or privacy filter hit for ${name}`);
-
-        // Try to read a direct dynamic code out of the error content payload
-        let targetedInviteLink = extractPersonalInviteLink(addErr?.content || addErr, jid);
-
-        // Fallback to the main group link if a custom individual one wasn't provided
-        if (!targetedInviteLink) {
-          if (!backupInviteLink) {
-            backupInviteLink = await getGroupInviteLink(groupId);
-          }
-          targetedInviteLink = backupInviteLink;
+        let link = extractPersonalInviteLink(addErr?.content || addErr, jid);
+        if (!link) {
+          if (!backupInviteLink) backupInviteLink = await getGroupInviteLink(groupId);
+          link = backupInviteLink;
         }
-
-        if (targetedInviteLink) {
+        if (link) {
           try {
             await sock.sendMessage(jid, {
-              text:
-                `*Group Invitation | MMU*\n\n` +
-                `Hello *${member.name}*,\n` +
-                `We couldn't add you directly due to your privacy settings.\n\n` +
-                `Please join using this link:\n${targetedInviteLink}\n\n` +
-                `_MMU Marks Bot_`
+              text: `*Group Invitation | MMU*\n\nHello *${member.name}*,\nWe couldn't add you directly due to your privacy settings.\n\nPlease join using this link:\n${link}\n\n_MMU Marks Bot_`
             });
-            console.log(`Invite link successfully sent to ${name}'s DM`);
             invitedList.push(member);
-          } catch (dmErr) {
-            console.error(`Failed sending DM link to ${name}:`, dmErr.message);
-            invalidList.push({ name: member.name, number, reason: `Could not send DM` });
-          }
+          } catch { invalidList.push({ name: member.name, number, reason: "Could not send DM" }); }
         } else {
           invalidList.push({ name: member.name, number, reason: "Privacy restriction — invite link unavailable" });
         }
       }
-
-      await new Promise((r) => setTimeout(r, 1200));
-    } catch (err) {
-      invalidList.push({ name: memberId, number: "—", reason: "Fetch error" });
-    }
+      await new Promise(r => setTimeout(r, 1200));
+    } catch { invalidList.push({ name: memberId, number: "—", reason: "Fetch error" }); }
   }
 
-  // Combined group announcement report notice
   let announcement = `*Group Add Report*\n\n`;
+  if (addedList.length)   announcement += `Successfully Added (${addedList.length}):\n` + addedList.map((m, i) => `   ${i+1}. *${m.name}*${m.grade ? ` | ${m.grade}` : ""}${m.category ? ` | ${m.category}` : ""} — ${m.marks} marks\n`).join("") + "\n";
+  if (invitedList.length) announcement += `Invite Link Sent — Privacy Restricted (${invitedList.length}):\n` + invitedList.map((m, i) => `   ${i+1}. *${m.name}*${m.grade ? ` | ${m.grade}` : ""}\n`).join("") + `   A join link was sent to each of their DMs.\n\n`;
+  if (invalidList.length) announcement += `Could Not Add (${invalidList.length}):\n` + invalidList.map((m, i) => `   ${i+1}. *${m.name}* — ${m.reason}\n`).join("") + `   Please update their WhatsApp numbers in the database.\n\n`;
+  announcement += `--- --- --- --- --- ---\nAdded: *${addedList.length}* |  Invited: *${invitedList.length}* |  Failed: *${invalidList.length}*\n\n_MMU Marks Bot_`;
 
-  if (addedList.length > 0) {
-    announcement += `Successfully Added (${addedList.length}):\n`;
-    addedList.forEach((m, i) => {
-      const grade = m.grade    ? ` | ${m.grade}`    : "";
-      const cat   = m.category ? ` | ${m.category}` : "";
-      announcement += `   ${i + 1}. *${m.name}*${grade}${cat} — ${m.marks} marks\n`;
-    });
-    announcement += "\n";
-  }
-
-  if (invitedList.length > 0) {
-    announcement += `Invite Link Sent — Privacy Restricted (${invitedList.length}):\n`;
-    invitedList.forEach((m, i) => {
-      const grade = m.grade ? ` | ${m.grade}` : "";
-      announcement += `   ${i + 1}. *${m.name}*${grade}\n`;
-    });
-    announcement += `   A join link was sent to each of their DMs.\n\n`;
-  }
-
-  if (invalidList.length > 0) {
-    announcement += `Could Not Add (${invalidList.length}):\n`;
-    invalidList.forEach((m, i) => {
-      announcement += `   ${i + 1}. *${m.name}* — ${m.reason}\n`;
-    });
-    announcement += `   Please update their WhatsApp numbers in the database.\n\n`;
-  }
-
-  announcement +=
-    `--- --- --- --- --- ---\n` +
-    `Added: *${addedList.length}* |  Invited: *${invitedList.length}* |  Failed: *${invalidList.length}*\n\n` +
-    `_MMU Marks Bot_`;
-
-  if (addedList.length > 0 || invitedList.length > 0 || invalidList.length > 0) {
+  if (addedList.length || invitedList.length || invalidList.length) {
     await dispatchMessage(groupId, announcement);
   }
 
   return res.json({
-    added:   addedList.length,
-    invited: invitedList.length,
-    failed:  invalidList.length,
+    added: addedList.length, invited: invitedList.length, failed: invalidList.length,
     message: `${addedList.length} added, ${invitedList.length} invited, ${invalidList.length} failed.`,
   });
 });
 
-// Bot status
-app.get("/api/bot/status", (req, res) => {
-  res.json({
-    connected:   !!sock,
-    uptime:      formatUptime(),
-    nextBlast:   getNextRunTime(),
-    imageLoaded: hasImage(),
-  });
-});
-
-app.listen(PORT, () => console.log(`Bot server on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Bot server running on http://localhost:${PORT}`));
 
 // ── Cron ──────────────────────────────────────────────────
 cron.schedule(CRON_SCHEDULE, () => {

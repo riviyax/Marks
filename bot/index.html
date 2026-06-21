@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ayanakoji_X | Marks Bot</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080D1A;
+      --surface:   #0F1829;
+      --surface2:  #162035;
+      --border:    #1A2840;
+      --cyan:      #00E5FF;
+      --cyan-dim:  rgba(0, 229, 255, 0.10);
+      --cyan-glow: rgba(0, 229, 255, 0.35);
+      --green:     #00FF88;
+      --amber:     #FFB830;
+      --red:       #FF4560;
+      --text:      #D6EAF8;
+      --muted:     #4A6580;
+      --label:     #7B9BB5;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 24px 72px;
+      gap: 40px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 600px;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+    }
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .title span { color: var(--cyan); }
+    .subtitle {
+      font-size: 13px;
+      color: var(--label);
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Edit button ── */
+    .edit-btn {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--cyan-dim);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 8px;
+      color: var(--cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .edit-btn:hover { background: rgba(0,229,255,0.18); border-color: var(--cyan); }
+    .icon { display: inline-block; width: 1em; text-align: center; }
+
+    /* ── Radar orb ── */
+    .orb-wrap {
+      position: relative;
+      width: 180px; height: 180px;
+      flex-shrink: 0;
+    }
+    .radar-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      animation: radarSpin 3s linear infinite;
+    }
+    @keyframes radarSpin { to { transform: rotate(360deg); } }
+    .orb {
+      position: absolute; inset: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 36%, #1A3550, #060C18);
+      border: 1.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .orb-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px var(--green), 0 0 28px rgba(0,255,136,0.5);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.25); opacity: 0.7; }
+    }
+    .orb-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      color: var(--green);
+      text-transform: uppercase;
+    }
+
+    /* ── Main card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,229,255,0.03);
+    }
+    .traffic { display: flex; gap: 6px; }
+    .traffic span { width: 10px; height: 10px; border-radius: 50%; }
+    .t-red   { background: #FF5F57; }
+    .t-amber { background: #FEBC2E; }
+    .t-green { background: #28C840; }
+    .card-title { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; }
+    .card-body { padding: 28px 24px; }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .stat {
+      background: rgba(0,229,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .stat-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--cyan);
+      line-height: 1;
+    }
+    .stat-value.green { color: var(--green); }
+    .stat-value.amber { color: var(--amber); }
+    .stat-value.small { font-size: 13px; line-height: 1.4; }
+    .stat-sub { font-size: 11px; color: var(--muted); }
+
+    .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+    .cmd-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+    .cmd-list { display: flex; flex-direction: column; gap: 8px; }
+    .cmd-row { display: flex; align-items: baseline; gap: 14px; }
+    .cmd-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cyan);
+      background: var(--cyan-dim);
+      border: 1px solid rgba(0,229,255,0.2);
+      border-radius: 5px;
+      padding: 2px 8px;
+      min-width: 130px;
+      white-space: nowrap;
+    }
+    .cmd-desc { font-size: 12px; color: var(--label); }
+
+    /* ── Ping button ── */
+    .ping-wrap {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .ping-btn {
+      flex: 1;
+      padding: 13px 20px;
+      background: var(--cyan-dim);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 10px;
+      color: var(--cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .ping-btn:hover  { background: rgba(0,229,255,0.18); border-color: var(--cyan); }
+    .ping-btn:active { transform: scale(0.98); }
+    .ping-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .ping-status { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); transition: color 0.3s; }
+    .ping-status.ok  { color: var(--green); }
+    .ping-status.err { color: var(--red); }
+
+    /* ── Footer ── */
+    .footer {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-align: center;
+    }
+    .footer span { color: var(--cyan); }
+
+    /* ── Skeleton ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, #1E3050 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+      height: 18px;
+      width: 80%;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* ── Modal overlay ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(4,8,20,0.85);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+      animation: modalIn 0.22s ease;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,229,255,0.03);
+      flex-shrink: 0;
+    }
+    .modal-header-left { display: flex; align-items: center; gap: 10px; }
+    .modal-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 6px var(--cyan);
+    }
+    .modal-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--label);
+      letter-spacing: 0.1em;
+    }
+    .modal-close {
+      background: none; border: none;
+      color: var(--muted); font-size: 18px;
+      cursor: pointer; padding: 2px 6px;
+      border-radius: 4px;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+    .modal-body {
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    /* Sections inside modal */
+    .modal-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Form elements ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .field input, .field select {
+      background: rgba(0,229,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      width: 100%;
+    }
+    .field input:focus, .field select:focus {
+      border-color: rgba(0,229,255,0.5);
+      background: rgba(0,229,255,0.07);
+    }
+    .field input::placeholder { color: var(--muted); }
+    .field select option { background: #0F1829; }
+    .field select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Buttons ── */
+    .btn {
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s, opacity 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--cyan-dim);
+      border-color: rgba(0,229,255,0.3);
+      color: var(--cyan);
+    }
+    .btn-primary:hover:not(:disabled) { background: rgba(0,229,255,0.18); border-color: var(--cyan); }
+
+    .btn-danger {
+      background: rgba(255,69,96,0.1);
+      border-color: rgba(255,69,96,0.3);
+      color: var(--red);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(255,69,96,0.2); border-color: var(--red); }
+
+    .btn-success {
+      background: rgba(0,255,136,0.1);
+      border-color: rgba(0,255,136,0.3);
+      color: var(--green);
+    }
+    .btn-success:hover:not(:disabled) { background: rgba(0,255,136,0.18); border-color: var(--green); }
+
+    .btn-amber {
+      background: rgba(255,184,48,0.1);
+      border-color: rgba(255,184,48,0.3);
+      color: var(--amber);
+    }
+    .btn-amber:hover:not(:disabled) { background: rgba(255,184,48,0.18); border-color: var(--amber); }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Inline message ── */
+    .inline-msg {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: none;
+    }
+    .inline-msg.show { display: block; }
+    .inline-msg.ok  { color: var(--green); background: rgba(0,255,136,0.07); border: 1px solid rgba(0,255,136,0.2); }
+    .inline-msg.err { color: var(--red);   background: rgba(255,69,96,0.07);  border: 1px solid rgba(255,69,96,0.2); }
+    .inline-msg.info{ color: var(--cyan);  background: rgba(0,229,255,0.07);  border: 1px solid rgba(0,229,255,0.2); }
+
+    /* ── Pairing code display ── */
+    .pairing-code-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .pairing-code-wrap.show { display: flex; }
+    .pairing-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--cyan);
+      letter-spacing: 0.25em;
+      text-align: center;
+      padding: 18px;
+      background: rgba(0,229,255,0.06);
+      border: 1px solid rgba(0,229,255,0.25);
+      border-radius: 10px;
+    }
+    .pairing-code-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--amber);
+      letter-spacing: 0.08em;
+    }
+    .pairing-code-state .spin-icon {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pairing-code-state.connected { color: var(--green); }
+
+    /* ── Group badge ── */
+    .group-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--label);
+      background: rgba(0,229,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+    .group-badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+    }
+
+    /* ── Active group stat ── */
+    #activeGroupRow {
+      display: none;
+      margin-top: 16px;
+    }
+    #activeGroupRow.show { display: flex; }
+
+    /* ── Separator ── */
+    .modal-sep {
+      height: 1px;
+      background: var(--border);
+    }
+
+    @media (max-width: 480px) {
+      .status-grid { grid-template-columns: 1fr; }
+      .page { padding: 32px 16px 56px; gap: 28px; }
+      .edit-btn { font-size: 10px; padding: 5px 10px; }
+      .pairing-code { font-size: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .radar-svg, .orb-dot, .spin-icon { animation: none; }
+      .modal { animation: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <p class="eyebrow" id="botSubheading"></p>
+    <div class="header-top">
+      <h1 class="title">Ayanakoji<span>_X</span></h1>
+      <button class="edit-btn" onclick="openModal()"><span class="icon">&#9881;</span> ADMIN</button>
+    </div>
+    <p class="subtitle">WhatsApp Marks Bot &middot; System Monitor</p>
+  </div>
+
+  <!-- Radar orb -->
+  <div class="orb-wrap">
+    <svg class="radar-svg" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="90" cy="90" r="86" stroke="rgba(0,229,255,0.10)" stroke-width="1"/>
+      <circle cx="90" cy="90" r="68" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+      <circle cx="90" cy="90" r="50" stroke="rgba(0,229,255,0.07)" stroke-width="1"/>
+      <path d="M90 90 L90 4 A86 86 0 0 1 165 132 Z" fill="url(#sweep)" opacity="0.55"/>
+      <defs>
+        <radialGradient id="sweep" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#00E5FF" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <line x1="90" y1="4"   x2="90"  y2="176" stroke="rgba(0,229,255,0.08)" stroke-width="1"/>
+      <line x1="4"  y1="90"  x2="176" y2="90"  stroke="rgba(0,229,255,0.08)" stroke-width="1"/>
+    </svg>
+    <div class="orb">
+      <div class="orb-dot" id="orbDot"></div>
+      <div class="orb-label" id="orbLabel">ONLINE</div>
+    </div>
+  </div>
+
+  <!-- Main card -->
+  <div class="card">
+    <div class="card-header">
+      <div class="traffic">
+        <span class="t-red"></span>
+        <span class="t-amber"></span>
+        <span class="t-green"></span>
+      </div>
+      <span class="card-title">bot.status &middot; live</span>
+    </div>
+    <div class="card-body">
+      <div class="status-grid">
+        <div class="stat">
+          <div class="stat-label">Connection</div>
+          <div class="stat-value green" id="statConnected"><div class="skeleton"></div></div>
+          <div class="stat-sub">WhatsApp socket</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Uptime</div>
+          <div class="stat-value" id="statUptime"><div class="skeleton"></div></div>
+          <div class="stat-sub">since last connect</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Image</div>
+          <div class="stat-value" id="statImage"><div class="skeleton"></div></div>
+          <div class="stat-sub">caption.png</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Next Blast</div>
+          <div class="stat-value small" id="statBlast"><div class="skeleton"></div></div>
+          <div class="stat-sub">weekly marks send</div>
+        </div>
+      </div>
+
+      <!-- Active group row (shown only when a group is set) -->
+      <div id="activeGroupRow" style="align-items:center; gap:10px; margin-top:16px; padding:14px 16px; background:rgba(0,229,255,0.04); border:1px solid var(--border); border-radius:10px;">
+        <div style="flex:1;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:5px;">Active Group</div>
+          <div id="activeGroupName" style="font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--cyan); font-weight:600;"></div>
+        </div>
+        <div style="font-size:10px; color:var(--muted); font-family:'JetBrains Mono',monospace;" id="activeGroupId"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="cmd-section-title">Available Commands</div>
+      <div class="cmd-list">
+        <div class="cmd-row">
+          <span class="cmd-key">.about</span>
+          <span class="cmd-desc">Bot status, uptime &amp; next blast time</span>
+        </div>
+        <div class="cmd-row">
+          <span class="cmd-key">.markslist</span>
+          <span class="cmd-desc">All members ranked by marks</span>
+        </div>
+        <div class="cmd-row">
+          <span class="cmd-key">.marks &lt;name&gt;</span>
+          <span class="cmd-desc">Look up a single member's details</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ping button -->
+  <div class="ping-wrap">
+    <button class="ping-btn" id="pingBtn" onclick="pingStatus()"><span class="icon">&#8635;</span> Refresh Status</button>
+    <span class="ping-status" id="pingStatus"></span>
+  </div>
+
+  <p class="footer">Developed by <span>Riviya_X</span> &middot; MMU Marks System</p>
+
+</div>
+
+<!-- ══════════════════ ADMIN MODAL ══════════════════ -->
+<div class="modal-overlay" id="modalOverlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal">
+
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <div class="modal-dot"></div>
+        <span class="modal-title" id="modalTitle">ADMIN &middot; AUTHENTICATE</span>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- ── STEP 1: Password entry ── -->
+      <div id="stepAuth" class="modal-section">
+        <div class="modal-section-title">Enter Admin Password</div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="authPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') verifyPassword()" />
+        </div>
+        <div class="inline-msg" id="authMsg"></div>
+        <button class="btn btn-primary" onclick="verifyPassword()" id="authBtn">
+          <span class="icon">&rarr;</span><span>Unlock</span>
+        </button>
+      </div>
+
+      <!-- ── STEP 2: Admin panel (shown after auth) ── -->
+      <div id="stepPanel" style="display:none; flex-direction:column; gap:20px;">
+
+        <!-- Connection section -->
+        <div class="modal-section">
+          <div class="modal-section-title">WhatsApp Connection</div>
+
+          <!-- Logged in state -->
+          <div id="panelConnected" style="display:none; flex-direction:column; gap:10px;">
+            <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.2); border-radius:8px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);"></div>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--green);">Bot is connected</span>
+            </div>
+            <button class="btn btn-danger" onclick="doLogout()"><span class="icon">&#9099;</span> Logout &amp; Clear Auth</button>
+          </div>
+
+          <!-- Logged out / pairing state -->
+          <div id="panelDisconnected" style="display:none; flex-direction:column; gap:12px;">
+            <div style="display:flex; align-items:center; gap:10px; padding:12px 14px; background:rgba(255,69,96,0.06); border:1px solid rgba(255,69,96,0.2); border-radius:8px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:var(--red);"></div>
+              <span style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--red);">Bot not connected</span>
+            </div>
+            <div class="field">
+              <label>Phone Number (with country code)</label>
+              <input type="tel" id="pairPhone" placeholder="94771234567" />
+            </div>
+            <button class="btn btn-primary" onclick="requestPair()" id="pairBtn"><span class="icon">&#8635;</span> Request Pairing Code</button>
+
+            <!-- Pairing code block stays visible across status refreshes and modal
+                 re-opens until the bot is confirmed connected or user dismisses it. -->
+            <div class="pairing-code-wrap" id="pairingCodeWrap">
+              <div class="pairing-code" id="pairingCodeDisplay"></div>
+              <div class="pairing-code-state" id="pairingCodeState">
+                <span class="icon spin-icon">&#8635;</span>
+                <span id="pairingCodeStateText">Waiting for device to link&hellip;</span>
+              </div>
+            </div>
+
+            <div class="inline-msg" id="pairMsg"></div>
+          </div>
+        </div>
+
+        <div class="modal-sep"></div>
+
+        <!-- Group section -->
+        <div class="modal-section">
+          <div class="modal-section-title">Active Group</div>
+          <div class="field">
+            <label>Select Group</label>
+            <select id="groupSelect" onchange="onGroupSelectChange()">
+              <option value="">— click Fetch to load groups —</option>
+            </select>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-amber" onclick="fetchGroups()" id="fetchGroupsBtn"><span class="icon">&#8595;</span> Fetch Groups</button>
+            <button class="btn btn-success" onclick="saveGroup()" id="saveGroupBtn" disabled><span class="icon">&#10003;</span> Set Group</button>
+          </div>
+          <div class="inline-msg" id="groupMsg"></div>
+        </div>
+
+        <div class="modal-sep"></div>
+
+        <!-- Change Password section -->
+        <div class="modal-section">
+          <div class="modal-section-title">Change Password</div>
+          <div class="field">
+            <label>Current Password</label>
+            <input type="password" id="pwCurrent" placeholder="••••••••" />
+          </div>
+          <div class="field">
+            <label>New Password</label>
+            <input type="password" id="pwNew" placeholder="Min 4 characters" />
+          </div>
+          <div class="field">
+            <label>Confirm New Password</label>
+            <input type="password" id="pwConfirm" placeholder="Repeat new password" onkeydown="if(event.key==='Enter') changePassword()" />
+          </div>
+          <button class="btn btn-primary" onclick="changePassword()"><span class="icon">&#128272;</span> Update Password</button>
+          <div class="inline-msg" id="pwMsg"></div>
+        </div>
+
+      </div>
+      <!-- end stepPanel -->
+
+    </div>
+  </div>
+</div>
+<!-- end modal -->
+
+<script>
+  // ── State ────────────────────────────────────────────
+  let adminPassword   = '';
+  let currentGroups    = [];
+  let isAuthenticated  = false;
+
+  // Tracks an in-progress pairing so status refreshes / modal re-opens
+  // never wipe the code out from under the user while they're mid-scan.
+  // 'idle'    -> no pairing in progress, nothing to show
+  // 'pending' -> code shown, still polling for the device to link
+  // 'linked'  -> device linked, success state shown until dismissed
+  let pairingState   = 'idle';
+  let pairingPollId  = null;
+  let pairingPolls   = 0;
+
+  // ── Status fetch ──────────────────────────────────────
+  async function fetchStatus() {
+    try {
+      const res  = await fetch('/api/bot/status');
+      const data = await res.json();
+      const connected = data.connected;
+
+      document.getElementById('botSubheading').textContent = data.botSubheading;
+
+      const el = document.getElementById('statConnected');
+      el.className = 'stat-value ' + (connected ? 'green' : '');
+      el.style.color = connected ? 'var(--green)' : 'var(--red)';
+      el.textContent = connected ? 'CONNECTED' : 'OFFLINE';
+
+      const dot   = document.getElementById('orbDot');
+      const label = document.getElementById('orbLabel');
+      dot.style.background = connected ? 'var(--green)' : 'var(--red)';
+      dot.style.boxShadow  = connected
+        ? '0 0 10px var(--green), 0 0 28px rgba(0,255,136,0.5)'
+        : '0 0 10px var(--red),   0 0 28px rgba(255,69,96,0.5)';
+      label.style.color = connected ? 'var(--green)' : 'var(--red)';
+      label.textContent = connected ? 'ONLINE' : 'OFFLINE';
+
+      document.getElementById('statUptime').textContent = data.uptime || '—';
+
+      const imgEl = document.getElementById('statImage');
+      imgEl.textContent = data.imageLoaded ? 'LOADED' : 'MISSING';
+      imgEl.style.color = data.imageLoaded ? 'var(--cyan)' : 'var(--amber)';
+
+      document.getElementById('statBlast').textContent = data.nextBlast || '—';
+
+      // Active group display
+      if (data.groupId) {
+        document.getElementById('activeGroupRow').classList.add('show');
+        // Try to match against known groups
+        const match = currentGroups.find(g => g.id === data.groupId);
+        document.getElementById('activeGroupName').textContent = match ? match.name : 'Group set';
+        document.getElementById('activeGroupId').textContent   = data.groupId.split('@')[0];
+      } else {
+        document.getElementById('activeGroupRow').classList.remove('show');
+      }
+
+      // Update panel state if open. Pass `connected` through so the panel
+      // can react to a freshly-completed pairing even if this fetch was
+      // triggered by the global 30s timer rather than the pairing poll.
+      if (isAuthenticated) updatePanelConnectionState(connected);
+
+      return true;
+    } catch {
+      ['statConnected','statUptime','statImage','statBlast'].forEach(id => {
+        const el = document.getElementById(id);
+        el.innerHTML = '';
+        el.textContent = '—';
+        el.style.color = '';
+      });
+      const el = document.getElementById('statConnected');
+      el.textContent = 'UNREACHABLE';
+      el.style.color  = 'var(--red)';
+      document.getElementById('orbDot').style.background = 'var(--red)';
+      document.getElementById('orbDot').style.boxShadow  = '0 0 10px var(--red), 0 0 28px rgba(255,69,96,0.5)';
+      document.getElementById('orbLabel').style.color    = 'var(--red)';
+      document.getElementById('orbLabel').textContent    = 'OFFLINE';
+      return false;
+    }
+  }
+
+  async function pingStatus() {
+    const btn = document.getElementById('pingBtn');
+    const status = document.getElementById('pingStatus');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">&#8635;</span> Pinging&hellip;';
+    status.className = 'ping-status';
+    status.textContent = '';
+    const ok = await fetchStatus();
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&#8635;</span> Refresh Status';
+    status.className   = 'ping-status ' + (ok ? 'ok' : 'err');
+    status.textContent = ok ? 'Live' : 'No response';
+    setTimeout(() => { status.textContent = ''; status.className = 'ping-status'; }, 3500);
+  }
+
+  // ── Modal helpers ─────────────────────────────────────
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('active');
+    document.getElementById('authPassword').value = '';
+    showMsg('authMsg', '', '');
+    setStep('auth');
+    setTimeout(() => document.getElementById('authPassword').focus(), 100);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+    // Don't reset auth state — user stays logged in for session.
+    // Don't reset pairing state either — if a code is mid-poll, it should
+    // still be there when the modal is reopened.
+  }
+
+  function overlayClick(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function setStep(step) {
+    document.getElementById('stepAuth').style.display  = step === 'auth'  ? 'flex'   : 'none';
+    document.getElementById('stepPanel').style.display = step === 'panel' ? 'flex'   : 'none';
+    if (step === 'auth')  document.getElementById('modalTitle').textContent = 'ADMIN · AUTHENTICATE';
+    if (step === 'panel') document.getElementById('modalTitle').textContent = 'ADMIN · CONTROL PANEL';
+  }
+
+  function showMsg(id, type, text) {
+    const el = document.getElementById(id);
+    el.className = 'inline-msg' + (type ? ' ' + type + ' show' : '');
+    el.textContent = text;
+  }
+
+  // ── Auth ──────────────────────────────────────────────
+  async function verifyPassword() {
+    const pw  = document.getElementById('authPassword').value.trim();
+    const btn = document.getElementById('authBtn');
+    if (!pw) { showMsg('authMsg', 'err', 'Enter your password.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">&#8635;</span> Verifying&hellip;';
+    showMsg('authMsg', '', '');
+
+    try {
+      const res  = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        adminPassword   = pw;
+        isAuthenticated = true;
+        setStep('panel');
+        populatePanel();
+      } else {
+        showMsg('authMsg', 'err', data.error || 'Wrong password.');
+        document.getElementById('authPassword').value = '';
+        document.getElementById('authPassword').focus();
+      }
+    } catch {
+      showMsg('authMsg', 'err', 'Server unreachable.');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&rarr;</span><span>Unlock</span>';
+  }
+
+  async function populatePanel() {
+    // Fill connection state
+    await fetchStatus();
+    const connected = document.getElementById('statConnected').textContent === 'CONNECTED';
+    updatePanelConnectionState(connected);
+
+    // Clear one-off fields, but never touch the pairing code UI here —
+    // that's governed entirely by `pairingState`, not by panel re-entry.
+    showMsg('groupMsg', '', '');
+    showMsg('pwMsg',    '', '');
+    document.getElementById('pwCurrent').value = '';
+    document.getElementById('pwNew').value     = '';
+    document.getElementById('pwConfirm').value = '';
+
+    // Re-render whatever the pairing state currently is, instead of
+    // resetting it. This is what fixes the code disappearing/reappearing
+    // incorrectly when the modal is closed and reopened.
+    renderPairingState();
+
+    // Pre-select current group if any
+    const gid = document.getElementById('activeGroupId').textContent;
+    if (gid) {
+      document.getElementById('groupSelect').innerHTML = `<option value="${gid}@g.us" selected>${gid} (current — fetch to see name)</option>`;
+    } else {
+      document.getElementById('groupSelect').innerHTML = `<option value="">— click Fetch to load groups —</option>`;
+    }
+    document.getElementById('saveGroupBtn').disabled = true;
+  }
+
+  function updatePanelConnectionState(connected) {
+    const pc = document.getElementById('panelConnected');
+    const pd = document.getElementById('panelDisconnected');
+    if (connected) {
+      pc.style.display = 'flex';
+      pd.style.display = 'none';
+      // If we were mid-pairing and the bot is now connected, flip the
+      // pairing state to 'linked' so a later modal reopen shows success
+      // instead of a stale pending code.
+      if (pairingState === 'pending') {
+        pairingState = 'linked';
+        if (pairingPollId) { clearInterval(pairingPollId); pairingPollId = null; }
+      }
+    } else {
+      pc.style.display = 'none';
+      pd.style.display = 'flex';
+    }
+  }
+
+  // Single source of truth for the pairing-code UI. Called whenever
+  // pairingState changes, and whenever the panel is re-rendered, so the
+  // code's visibility always matches actual connection state rather than
+  // whatever happened to run last.
+  function renderPairingState() {
+    const wrap      = document.getElementById('pairingCodeWrap');
+    const stateEl    = document.getElementById('pairingCodeState');
+    const stateText  = document.getElementById('pairingCodeStateText');
+
+    if (pairingState === 'idle') {
+      wrap.classList.remove('show');
+      return;
+    }
+
+    wrap.classList.add('show');
+    if (pairingState === 'pending') {
+      stateEl.classList.remove('connected');
+      stateEl.innerHTML = '<span class="icon spin-icon">&#8635;</span><span>Waiting for device to link&hellip;</span>';
+    } else if (pairingState === 'linked') {
+      stateEl.classList.add('connected');
+      stateEl.innerHTML = '<span class="icon">&#10003;</span><span>Connected successfully</span>';
+    }
+  }
+
+  function dismissPairingCode() {
+    pairingState = 'idle';
+    if (pairingPollId) { clearInterval(pairingPollId); pairingPollId = null; }
+    document.getElementById('pairingCodeDisplay').textContent = '';
+    renderPairingState();
+  }
+
+  // ── Logout ────────────────────────────────────────────
+  async function doLogout() {
+    if (!confirm('This will disconnect the bot and delete the auth folder. Continue?')) return;
+    try {
+      const res  = await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        dismissPairingCode();
+        updatePanelConnectionState(false);
+        showMsg('pairMsg', 'ok', 'Logged out. Enter a phone number to pair.');
+        fetchStatus();
+      } else {
+        alert('Logout failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch {
+      alert('Server error during logout.');
+    }
+  }
+
+  // ── Pairing ───────────────────────────────────────────
+  async function requestPair() {
+    const phone = document.getElementById('pairPhone').value.trim().replace(/\D/g, '');
+    const btn   = document.getElementById('pairBtn');
+
+    if (!phone || phone.length < 7) {
+      showMsg('pairMsg', 'err', 'Enter a valid phone number with country code.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">&#8635;</span> Requesting&hellip;';
+    showMsg('pairMsg', '', '');
+
+    // Reset any previous pairing run before starting a new one.
+    if (pairingPollId) { clearInterval(pairingPollId); pairingPollId = null; }
+    pairingPolls = 0;
+
+    try {
+      const res  = await fetch('/api/admin/pair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password: adminPassword }),
+      });
+      const data = await res.json();
+      if (data.success && data.code) {
+        document.getElementById('pairingCodeDisplay').textContent = data.code;
+        pairingState = 'pending';
+        renderPairingState();
+        showMsg('pairMsg', 'info', 'Enter this code in WhatsApp under Linked Devices, then Link a Device.');
+
+        // Poll for connection. The code now stays visible the entire time —
+        // it only flips to the "Connected successfully" state, it does not
+        // vanish, and it stays that way even if the modal is closed/reopened
+        // until the user dismisses it or starts a new pairing.
+        pairingPollId = setInterval(async () => {
+          pairingPolls++;
+          const s = await fetch('/api/bot/status').then(r => r.json()).catch(() => ({}));
+          if (s.connected) {
+            clearInterval(pairingPollId);
+            pairingPollId = null;
+            pairingState = 'linked';
+            renderPairingState();
+            updatePanelConnectionState(true);
+            fetchStatus();
+          }
+          if (pairingPolls > 24) { // stop polling after ~2 min either way
+            clearInterval(pairingPollId);
+            pairingPollId = null;
+          }
+        }, 5000);
+      } else {
+        showMsg('pairMsg', 'err', data.error || 'Pairing failed.');
+      }
+    } catch {
+      showMsg('pairMsg', 'err', 'Server error requesting pairing code.');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&#8635;</span> Request Pairing Code';
+  }
+
+  // ── Groups ────────────────────────────────────────────
+  async function fetchGroups() {
+    const btn = document.getElementById('fetchGroupsBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">&#8595;</span> Loading&hellip;';
+    showMsg('groupMsg', '', '');
+
+    try {
+      const res   = await fetch('/api/bot/groups');
+      if (!res.ok) {
+        const err = await res.json();
+        showMsg('groupMsg', 'err', err.error || 'Failed to fetch groups.');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon">&#8595;</span> Fetch Groups';
+        return;
+      }
+      const groups = await res.json();
+      currentGroups = groups;
+
+      const sel = document.getElementById('groupSelect');
+      if (!groups.length) {
+        sel.innerHTML = '<option value="">No groups found</option>';
+        showMsg('groupMsg', 'err', 'Bot is not in any groups.');
+      } else {
+        sel.innerHTML = '<option value="">— Select a group —</option>' +
+          groups.map(g => `<option value="${g.id}">${g.name} (${g.members} members)</option>`).join('');
+        showMsg('groupMsg', 'info', `${groups.length} group(s) loaded.`);
+      }
+      document.getElementById('saveGroupBtn').disabled = true;
+    } catch {
+      showMsg('groupMsg', 'err', 'Server error fetching groups.');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&#8595;</span> Fetch Groups';
+  }
+
+  function onGroupSelectChange() {
+    const val = document.getElementById('groupSelect').value;
+    document.getElementById('saveGroupBtn').disabled = !val;
+  }
+
+  async function saveGroup() {
+    const groupId = document.getElementById('groupSelect').value;
+    if (!groupId) return;
+
+    const btn = document.getElementById('saveGroupBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="icon">&#10003;</span> Saving&hellip;';
+
+    try {
+      const res  = await fetch('/api/bot/set-group', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId, password: adminPassword }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showMsg('groupMsg', 'ok', 'Group saved successfully.');
+        fetchStatus();
+      } else {
+        showMsg('groupMsg', 'err', data.error || 'Failed to save.');
+      }
+    } catch {
+      showMsg('groupMsg', 'err', 'Server error saving group.');
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="icon">&#10003;</span> Set Group';
+  }
+
+  // ── Change Password ───────────────────────────────────
+  async function changePassword() {
+    const current  = document.getElementById('pwCurrent').value;
+    const newPw    = document.getElementById('pwNew').value;
+    const confirm  = document.getElementById('pwConfirm').value;
+
+    if (!current || !newPw || !confirm) {
+      showMsg('pwMsg', 'err', 'All fields are required.'); return;
+    }
+    if (newPw !== confirm) {
+      showMsg('pwMsg', 'err', 'New passwords do not match.'); return;
+    }
+    if (newPw.length < 4) {
+      showMsg('pwMsg', 'err', 'New password must be at least 4 characters.'); return;
+    }
+    if (current !== adminPassword) {
+      showMsg('pwMsg', 'err', 'Current password is wrong.'); return;
+    }
+
+    try {
+      const res  = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: current, newPassword: newPw }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        adminPassword = newPw;
+        showMsg('pwMsg', 'ok', 'Password updated successfully.');
+        document.getElementById('pwCurrent').value = '';
+        document.getElementById('pwNew').value     = '';
+        document.getElementById('pwConfirm').value = '';
+      } else {
+        showMsg('pwMsg', 'err', data.error || 'Failed.');
+      }
+    } catch {
+      showMsg('pwMsg', 'err', 'Server error.');
+    }
+  }
+
+  // ── Keyboard: Esc to close modal ─────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.getElementById('modalOverlay').classList.contains('active'))
+      closeModal();
+    if (e.key === 'Enter' && document.getElementById('stepAuth').style.display !== 'none')
+      verifyPassword();
+  });
+
+  // ── Boot ─────────────────────────────────────────────
+  fetchStatus();
+  setInterval(fetchStatus, 30000);
+</script>
+</body>
+</html>
