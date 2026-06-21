@@ -18,7 +18,7 @@ Marks/
 | Folder   | Description                                              |
 |----------|-----------------------------------------------------------|
 | `bot`    | WhatsApp bot, group management, and admin web panel       |
-| `client` | Student-facing dashboard and marks viewer                 |
+| `client` | Admin dashboard for managing members, marks, and WhatsApp actions |
 | `server` | REST API and database layer                               |
 
 ---
@@ -81,6 +81,8 @@ VITE_TEMPIP_LOGIN_PASS=123
 VITE_BOT_URL=http://localhost:3001
 ```
 
+`VITE_LOGIN_PASS` and `VITE_TEMPIP_LOGIN_PASS` gate access to the dashboard — change these from the defaults before deploying.
+
 ### Bot Setup
 
 To run the WhatsApp bot locally:
@@ -133,7 +135,22 @@ The `server` and `bot` both default to **port 3000**. If you're running both on 
 
 ---
 
-## Features
+## Frontend (Admin Dashboard)
+
+The `client` is a password-protected admin dashboard for managing the member database and triggering WhatsApp actions directly from the browser.
+
+- **Member table** — name, position, marks, grade, category, and WhatsApp number for every member
+- **Search & filter** — quick search across members, plus a sort/filter dropdown
+- **Per-member actions** — `View` profile, `Send` a WhatsApp marks update, or `+ Group` to add them to the configured WhatsApp group
+- **Bulk actions** — select multiple members via checkboxes, or use `Send All` to blast marks updates to everyone at once
+- **Add Members** — create new member records directly from the dashboard (shortcut: `Shift + N`)
+- **Print Table** — export/print the current member list
+- **Last update tracker** — shows when the marks data was last changed, with a date picker to filter by update time
+- **Login gate** — access controlled by `VITE_LOGIN_PASS` / `VITE_TEMPIP_LOGIN_PASS`
+
+---
+
+## Bot Features
 
 - Weekly automated marks notifications via WhatsApp (cron-scheduled)
 - Admin panel for pairing, group selection, and password management
