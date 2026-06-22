@@ -29,6 +29,16 @@ const MEMBER_VIEW   = process.env.MEMBER_VIEW_BASE || "";
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE    || "0 9 * * 1";
 const IMAGE_PATH    = path.resolve(__dirname, "images/caption.png");
 const CONFIG_PATH   = path.resolve(__dirname, "config.json");
+const AUTH_PATH     = path.resolve(__dirname, "auth_info");
+
+// Optional: set PAIR_PHONE in your host's env vars to skip the interactive
+// terminal prompt entirely. Useful on hosts that don't give you a real TTY
+// (panel "start" buttons, process managers, some container setups).
+const PAIR_PHONE_ENV = process.env.PAIR_PHONE || "";
+
+// How long a requested pairing code is realistically usable for. WhatsApp's
+// own expiry is short — this is just for our own logging/warnings.
+const PAIRING_CODE_TTL_MS = 45 * 1000;
 
 // ── Config file (group ID + admin password) ───────────────
 function loadConfig() {
@@ -51,8 +61,72 @@ let sock         = null;
 let botStartTime = Date.now();
 let pairingRequested = false;
 
+// ── Single-flight lock for pairing ────────────────────────
+// Both the terminal flow (connectToWhatsApp) and the admin-panel route
+// (/api/admin/pair) can request a pairing code. If both run close together
+// against the same auth_info folder, each request invalidates the previous
+// code — so whichever code you're staring at in your terminal silently
+// stops being valid, and WhatsApp reports "wrong code" even though you
+// typed it correctly. This lock makes that race impossible: only one
+// pairing attempt can be in flight at a time, system-wide.
+let pairingInFlight = false;
+let lastPairingIssuedAt = 0;
+let lastPairingSource   = null; // "terminal" | "admin-panel"
+
+function beginPairing(source) {
+  if (pairingInFlight) {
+    const ageSec = Math.round((Date.now() - lastPairingIssuedAt) / 1000);
+    console.warn(
+      `\n[Pairing] Refused: a pairing request from "${lastPairingSource}" is already ` +
+      `in flight (started ${ageSec}s ago). Wait for it to finish/expire before ` +
+      `requesting another — running two at once invalidates whichever code ` +
+      `you're looking at.\n`
+    );
+    return false;
+  }
+  pairingInFlight    = true;
+  lastPairingIssuedAt = Date.now();
+  lastPairingSource   = source;
+  return true;
+}
+
+function endPairing() {
+  pairingInFlight = false;
+}
+
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (t) => new Promise((r) => rl.question(t, r));
+
+// ── auth_info staleness check ─────────────────────────────
+// If auth_info exists but creds look incomplete/half-registered (e.g. left
+// over from an interrupted pairing attempt), Baileys can end up in a
+// confused state where it doesn't cleanly ask for a fresh code. Surface
+// this loudly instead of silently misbehaving.
+function checkAuthFolderHealth() {
+  try {
+    if (!fs.existsSync(AUTH_PATH)) return;
+    const credsFile = path.join(AUTH_PATH, "creds.json");
+    if (!fs.existsSync(credsFile)) {
+      console.warn(
+        `[Auth] auth_info exists but creds.json is missing — this folder is ` +
+        `likely from an interrupted run. If pairing keeps failing, stop the ` +
+        `bot and run: rm -rf auth_info`
+      );
+      return;
+    }
+    const creds = JSON.parse(fs.readFileSync(credsFile, "utf8"));
+    if (!creds.registered) {
+      console.warn(
+        `[Auth] auth_info/creds.json exists but is NOT marked registered. ` +
+        `This is consistent with a previous pairing attempt that never ` +
+        `completed. It should resolve itself once pairing succeeds — but if ` +
+        `you keep getting "wrong code", a clean slate helps: rm -rf auth_info`
+      );
+    }
+  } catch (err) {
+    console.warn(`[Auth] Could not inspect auth_info health: ${err.message}`);
+  }
+}
 
 // ── Cloudflare Tunnel ─────────────────────────────────────
 const CLOUDFLARE_TOKEN = process.env.CLOUDFLARE_TOKEN || "";
@@ -222,6 +296,36 @@ function formatUptime() {
   const hours = Math.floor(ms / 3600000);
   const mins  = Math.floor((ms % 3600000) / 60000);
   return `${hours}h ${mins}m`;
+}
+
+// ── Pairing code request (shared by terminal + admin panel) ──────────────
+// Centralizing this means both call sites get identical logging, identical
+// TTL warnings, and — critically — both go through the same single-flight
+// lock so they can never race each other.
+async function requestPairingCodeFor(targetSock, rawPhone, source) {
+  const cleaned = rawPhone.replace(/\D/g, "");
+  if (!cleaned) throw new Error("Empty/invalid phone number after stripping non-digits.");
+
+  let raw = await targetSock.requestPairingCode(cleaned);
+  if (!raw) throw new Error("Baileys returned an empty pairing code.");
+
+  const formatted = raw.match(/.{1,4}/g)?.join("-") || raw;
+  const issuedAt   = new Date();
+
+  console.log(
+    `\n[Pairing:${source}] Code issued at ${issuedAt.toLocaleTimeString()} for +${cleaned}\n` +
+    `  RAW        : ${raw}\n` +
+    `  FORMATTED  : ${formatted}\n` +
+    `  Enter this in WhatsApp -> Linked Devices -> Link with phone number,\n` +
+    `  within ~${PAIRING_CODE_TTL_MS / 1000}s. If you requested another code after this one,\n` +
+    `  only the MOST RECENT code is valid — discard this one.\n`
+  );
+
+  setTimeout(() => {
+    console.log(`[Pairing:${source}] Code from ${issuedAt.toLocaleTimeString()} has likely expired if still unused.`);
+  }, PAIRING_CODE_TTL_MS);
+
+  return { raw, formatted, issuedAt };
 }
 
 // ── Command Handlers ──────────────────────────────────────
@@ -396,10 +500,10 @@ async function runCommand(jid, msgKey, cmd, text) {
     } else {
       return; // not a recognized command — leave no reaction
     }
-    await reactTo(msgKey, "✓");
+    await reactTo(msgKey, "✅");
   } catch (err) {
     console.error(`Command error: ${err.message}`);
-    await reactTo(msgKey, "✗");
+    await reactTo(msgKey, "❌");
   }
 }
 
@@ -414,23 +518,26 @@ function registerMessageHandler(sockInstance) {
       if (msg.key.remoteJid === "status@broadcast") continue;
 
       const isGroup = msg.key.remoteJid?.endsWith("@g.us");
-      const botJid  = sockInstance.user?.id.split(":")[0] + "@s.whatsapp.net";
-      const isSelfChat = msg.key.remoteJid === botJid;
-
-      // Only ignore the bot's own outgoing messages in 1:1 chats. In groups,
-      // fromMe simply means "the bot sent this earlier" and must never be
-      // used to decide whether to process incoming commands from others —
-      // the previous logic accidentally let group-quirks fall through here
-      // too, which is part of why group commands looked broken.
-      if (msg.key.fromMe && !isSelfChat && !isGroup) continue;
-      if (msg.key.fromMe && isGroup) continue; // ignore bot's own group sends
 
       const text = extractText(msg.message);
       if (!text || !text.startsWith(".")) continue;
 
+      // fromMe is true for ANY message sent from the paired account — that
+      // includes the owner typing a command on their own phone, not just
+      // messages the bot's own code sent. Blanket-skipping fromMe (the old
+      // behavior) silently swallowed every command the owner tried to run,
+      // in groups and DMs alike, because it looked identical to "the bot
+      // already replied to this."
+      //
+      // The bot's own replies never start with "." (see buildMessage /
+      // handleAbout / etc. above), so the `text.startsWith(".")` check
+      // above already filters those out. That means we no longer need to
+      // gate on fromMe at all to avoid reprocessing the bot's own output —
+      // a command-shaped message is, by construction, something a human
+      // typed, whether or not it came from the paired number.
       const jid = msg.key.remoteJid;
       const cmd = text.toLowerCase();
-      console.log(`Command: "${text}" ${isGroup ? "(group)" : "(dm)"}`);
+      console.log(`Command: "${text}" ${isGroup ? "(group)" : "(dm)"}${msg.key.fromMe ? " (from owner)" : ""}`);
 
       await runCommand(jid, msg.key, cmd, text);
     }
@@ -439,6 +546,8 @@ function registerMessageHandler(sockInstance) {
 
 // ── WhatsApp Connect ──────────────────────────────────────
 async function connectToWhatsApp() {
+  checkAuthFolderHealth();
+
   const { state, saveCreds } = await useMultiFileAuthState("auth_info");
   const { version } = await fetchLatestBaileysVersion();
 
@@ -452,15 +561,27 @@ async function connectToWhatsApp() {
 
   if (!sock.authState.creds.registered && !pairingRequested) {
     pairingRequested = true;
-    console.log("\nPairing sequence started...");
-    const phone   = await question("Enter phone with country code (e.g. 94771234567): ");
-    const cleaned = phone.replace(/\D/g, "");
+
+    // If PAIR_PHONE is set in env, skip the interactive prompt entirely.
+    // This matters on hosts that don't give you a real TTY attached to the
+    // running process — readline.question() can hang forever or resolve
+    // with an empty string in that situation, which silently breaks pairing.
+    const phone = PAIR_PHONE_ENV
+      ? (console.log(`\nUsing PAIR_PHONE from environment: ${PAIR_PHONE_ENV}`), PAIR_PHONE_ENV)
+      : await question("Enter phone with country code (e.g. 94771234567): ");
+
     setTimeout(async () => {
+      if (!beginPairing("terminal")) {
+        console.warn("[Pairing:terminal] Aborted — another pairing request is already in flight.");
+        return;
+      }
       try {
-        let code = await sock.requestPairingCode(cleaned);
-        code = code?.match(/.{1,4}/g)?.join("-") || code;
-        console.log(`\nPairing Code: ${code}\n`);
-      } catch (err) { console.error("Pairing failed:", err.message); }
+        await requestPairingCodeFor(sock, phone, "terminal");
+      } catch (err) {
+        console.error("Pairing failed:", err.message);
+      } finally {
+        endPairing();
+      }
     }, 3000);
   }
 
@@ -551,12 +672,12 @@ app.post("/api/admin/logout", (req, res) => {
       try { sock.logout(); } catch {}
       sock = null;
     }
-    const authPath = path.resolve(__dirname, "auth_info");
-    if (fs.existsSync(authPath)) {
-      fs.rmSync(authPath, { recursive: true, force: true });
+    if (fs.existsSync(AUTH_PATH)) {
+      fs.rmSync(AUTH_PATH, { recursive: true, force: true });
       console.log("auth_info deleted via admin panel.");
     }
     pairingRequested = false;
+    endPairing(); // clear any stuck pairing lock so a fresh attempt isn't blocked
     return res.json({ success: true, message: "Logged out and auth cleared." });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -570,7 +691,20 @@ app.post("/api/admin/pair", async (req, res) => {
   if (password !== cfg.adminPassword) return res.status(401).json({ error: "Wrong password." });
   if (!phone) return res.status(400).json({ error: "Missing phone number." });
 
+  // Guard against racing the terminal pairing flow (or a previous
+  // still-pending admin-panel request). Without this, two sockets can both
+  // call requestPairingCode against the same auth_info folder, and whichever
+  // code finishes second silently invalidates the first — the user is then
+  // looking at a dead code and WhatsApp correctly calls it "wrong".
+  if (!beginPairing("admin-panel")) {
+    return res.status(409).json({
+      error: "Another pairing request is already in progress. Wait ~45s for it to finish or expire, then try again.",
+    });
+  }
+
   try {
+    checkAuthFolderHealth();
+
     // Reconnect with fresh auth
     const { state, saveCreds } = await useMultiFileAuthState("auth_info");
     const { version } = await fetchLatestBaileysVersion();
@@ -588,6 +722,7 @@ app.post("/api/admin/pair", async (req, res) => {
       if (connection === "open") {
         botStartTime = Date.now();
         console.log("Bot connected after pairing!");
+        endPairing();
         try {
           const userJid = sock.user.id.split(":")[0] + "@s.whatsapp.net";
           await sock.sendMessage(userJid, {
@@ -599,19 +734,20 @@ app.post("/api/admin/pair", async (req, res) => {
         const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
         if (reason !== DisconnectReason.loggedOut) {
           setTimeout(connectToWhatsApp, 3000);
-        } else { sock = null; }
+        } else {
+          sock = null;
+          endPairing();
+        }
       }
     });
 
     registerMessageHandler(sock);
 
     await new Promise(r => setTimeout(r, 2000));
-    const cleaned = phone.replace(/\D/g, "");
-    let code = await sock.requestPairingCode(cleaned);
-    code = code?.match(/.{1,4}/g)?.join("-") || code;
-    console.log(`Pairing code issued for ${cleaned}: ${code}`);
-    return res.json({ success: true, code });
+    const { raw, formatted } = await requestPairingCodeFor(sock, phone, "admin-panel");
+    return res.json({ success: true, code: formatted, rawCode: raw });
   } catch (err) {
+    endPairing();
     return res.status(500).json({ error: err.message });
   }
 });
