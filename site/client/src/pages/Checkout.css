@@ -1,0 +1,103 @@
+.checkout-card {
+  max-width: 460px;
+  margin-top: 36px;
+}
+
+.method-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.method-tab {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--label);
+  border-radius: 9px;
+  padding: 10px;
+  cursor: pointer;
+}
+.method-tab.active {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: var(--cyan-dim);
+}
+
+.pane-desc {
+  font-size: 13.5px;
+  color: var(--label);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+
+.checkout-error {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--red);
+  background: var(--red-dim);
+  border: 1px solid rgba(255,69,96,0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.ezcash-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--amber-dim);
+  border: 1px solid rgba(255,184,48,0.25);
+  border-radius: 9px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+}
+.ezcash-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ezcash-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.file-drop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border);
+  border-radius: 9px;
+  padding: 22px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--label);
+  cursor: pointer;
+  text-align: center;
+}
+.file-drop:hover { border-color: var(--cyan); color: var(--cyan); }
+.file-drop input { display: none; }
+
+.receipt-pane form { display: flex; flex-direction: column; }
+.receipt-pane .btn { width: 100%; }
+
+.receipt-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.pending-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--amber);
+  font-size: 14.5px;
+}

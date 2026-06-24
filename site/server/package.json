@@ -1,0 +1,20 @@
+{
+  "name": "ayanakoji-x-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "mongoose": "^8.5.1",
+    "firebase-admin": "^12.3.0",
+    "multer": "^2.0.1",
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "uuid": "^9.0.1"
+  }
+}

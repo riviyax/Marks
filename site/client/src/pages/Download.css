@@ -1,0 +1,36 @@
+.download-card {
+  max-width: 460px;
+  margin-top: 36px;
+  text-align: center;
+}
+
+.download-file-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 22px;
+}
+.download-file-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.download-file-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.download-btn { width: 100%; padding: 14px; }
+
+.download-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+}

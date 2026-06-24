@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.local
+server/uploads/receipts/*
+!server/uploads/receipts/.gitkeep
+server/secure/*
+!server/secure/.gitkeep
+*.log
+.DS_Store

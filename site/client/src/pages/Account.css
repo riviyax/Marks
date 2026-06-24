@@ -1,0 +1,57 @@
+.account-card {
+  max-width: 460px;
+  margin-top: 36px;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+.account-avatar-fallback {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+  border: 1px solid rgba(0,229,255,0.3);
+  color: var(--cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.account-name { font-weight: 600; font-size: 15px; color: var(--text); }
+.account-email { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.lock-panel {
+  padding-top: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.lock-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 15px;
+  margin-top: 4px;
+}
+.lock-status.locked { color: var(--red); }
+.lock-status.unlocked { color: var(--green); }
+
+.lock-desc {
+  color: var(--label);
+  font-size: 13.5px;
+  max-width: 320px;
+  line-height: 1.55;
+  margin-bottom: 8px;
+}

@@ -1,0 +1,184 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #080D1A;
+  --surface:    #0F1829;
+  --surface2:   #162035;
+  --border:     #1A2840;
+  --cyan:       #00E5FF;
+  --cyan-dim:   rgba(0, 229, 255, 0.10);
+  --green:      #25D366;
+  --green-dim:  rgba(37, 211, 102, 0.10);
+  --amber:      #FFB830;
+  --amber-dim:  rgba(255, 184, 48, 0.10);
+  --red:        #FF4560;
+  --red-dim:    rgba(255, 69, 96, 0.10);
+  --text:       #D6EAF8;
+  --muted:      #4A6580;
+  --label:      #7B9BB5;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+}
+
+#root { min-height: 100vh; position: relative; }
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+a { color: inherit; }
+
+.page {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 24px 80px;
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow .dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+}
+.eyebrow .dot.locked { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.eyebrow .dot.pending { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+
+.page-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: clamp(30px, 5vw, 46px);
+  color: #fff;
+  letter-spacing: -0.02em;
+  text-align: center;
+  line-height: 1.15;
+}
+.page-title span { color: var(--cyan); }
+
+.page-sub {
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--label);
+  max-width: 480px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  width: 100%;
+}
+
+.btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 9px;
+  padding: 12px 22px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary {
+  background: var(--cyan);
+  color: #052028;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.15);
+}
+.btn-primary:hover:not(:disabled) { background: #00bacc; transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--label);
+}
+.btn-ghost:hover:not(:disabled) { border-color: var(--cyan); color: var(--cyan); }
+.btn-danger {
+  background: var(--red-dim);
+  border: 1px solid rgba(255, 69, 96, 0.3);
+  color: var(--red);
+}
+
+.input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+.input:focus {
+  outline: none;
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.12);
+}
+
+.spinner {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,229,255,0.2);
+  border-top-color: var(--cyan);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text);
+  z-index: 50;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+}
+.toast.error { border-color: rgba(255,69,96,0.35); color: var(--red); }
+.toast.success { border-color: rgba(37,211,102,0.35); color: var(--green); }
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+}

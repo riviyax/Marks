@@ -1,6 +1,26 @@
 // ============================================================
 //   Ayanakoji_X | Marks Bot — Baileys + node-cron + Express
 //   Features: WhatsApp bot, group management, admin panel
+//
+//   FIXES APPLIED (see inline comments marked "FIX:"):
+//   1. Added a real in-memory message store + getMessage() so Baileys
+//      can satisfy session-resync retries. Previously getMessage always
+//      returned undefined, which silently breaks delivery on any message
+//      that needs a retry/resync (very common) — sendMessage() still
+//      resolves, your code logs "Sent ->", but WhatsApp never gets a
+//      usable payload.
+//   2. Stopped swallowing "Bad MAC" / "Session error" / "Failed to
+//      decrypt" / "Closing session" stderr lines. These are exactly the
+//      diagnostic signal for the bug above — suppressing them hid the
+//      evidence. Left a single toggle (DEBUG_SUPPRESS_NOISY_LOGS) so you
+//      can re-enable suppression later once you've confirmed delivery
+//      works, without deleting the code.
+//   3. Tightened the groupParticipantsUpdate 403 check to use Number()
+//      instead of a string-only comparison, so a numeric status code
+//      doesn't slip through as "success".
+//   4. attachMessageStore() is wired into BOTH places a socket is created
+//      (connectToWhatsApp() and /api/admin/pair) so the fix applies no
+//      matter which path establishes the connection.
 // ============================================================
 
 const {
@@ -31,6 +51,12 @@ const IMAGE_PATH    = path.resolve(__dirname, "images/caption.png");
 const CONFIG_PATH   = path.resolve(__dirname, "config.json");
 const AUTH_PATH     = path.resolve(__dirname, "auth_info");
 
+// FIX (#2): Set this to true only after you've confirmed message delivery
+// works. While debugging delivery problems, keep it false so Bad MAC /
+// Session error / decrypt-failure lines actually show up in your console —
+// they're the main diagnostic signal for retry/session issues.
+const DEBUG_SUPPRESS_NOISY_LOGS = false;
+
 // Optional: set PAIR_PHONE in your host's env vars to skip the interactive
 // terminal prompt entirely. Useful on hosts that don't give you a real TTY
 // (panel "start" buttons, process managers, some container setups).
@@ -60,6 +86,45 @@ function saveConfig(data) {
 let sock         = null;
 let botStartTime = Date.now();
 let pairingRequested = false;
+
+// ── FIX (#1): In-memory message store backing getMessage() ───────────────
+// Baileys calls getMessage(key) when it needs to re-fetch/re-encrypt a
+// message you previously sent — most commonly during a session resync
+// (the recipient's client asks for a retry because the encrypted session
+// state needed re-establishing, which is routine, not exotic). If
+// getMessage has nothing to return, Baileys can't satisfy that retry, and
+// the message effectively vanishes even though your original sendMessage()
+// call already resolved successfully and your code logged "Sent ->".
+//
+// This is a simple capped in-memory Map. It does NOT persist across
+// restarts — for very high message volume or multi-process setups you'd
+// want a real store (e.g. a small SQLite/Redis-backed one), but for a bot
+// sending weekly blasts to a member list, in-memory is plenty.
+const messageStore = new Map(); // key: `${remoteJid}:${id}` -> proto message
+const MESSAGE_STORE_MAX_ENTRIES = 2000;
+
+function storeOutgoingMessage(jid, sentMsg) {
+  try {
+    const id = sentMsg?.key?.id;
+    if (!id || !sentMsg?.message) return;
+    messageStore.set(`${jid}:${id}`, sentMsg.message);
+    if (messageStore.size > MESSAGE_STORE_MAX_ENTRIES) {
+      const oldestKey = messageStore.keys().next().value;
+      messageStore.delete(oldestKey);
+    }
+  } catch {}
+}
+
+// Wraps sock.sendMessage so every outgoing message we send gets recorded,
+// without having to touch every call site individually.
+function attachMessageStore(sockInstance) {
+  const originalSend = sockInstance.sendMessage.bind(sockInstance);
+  sockInstance.sendMessage = async (jid, content, options) => {
+    const result = await originalSend(jid, content, options);
+    storeOutgoingMessage(jid, result);
+    return result;
+  };
+}
 
 // ── Single-flight lock for pairing ────────────────────────
 // Both the terminal flow (connectToWhatsApp) and the admin-panel route
@@ -153,12 +218,20 @@ if (!CLOUDFLARE_TOKEN || CLOUDFLARE_TOKEN === "PASTE_YOUR_ACTUAL_TOKEN_HERE") {
   tunnel.on("close", (code) => console.log(`[Cloudflare] Tunnel exited (${code})`));
 }
 
-// ── Suppress noisy Baileys stderr ─────────────────────────
+// ── Suppress noisy Baileys stderr (FIX #2: now toggleable, default OFF) ───
+// These exact strings — "Bad MAC", "Session error", "Failed to decrypt",
+// "Closing session" — are the diagnostic signal for the session-resync
+// problem described in FIX #1 above. Blanket-suppressing them (the old
+// behavior) hid the evidence that something was going wrong with delivery.
+// Leave DEBUG_SUPPRESS_NOISY_LOGS = false while you confirm messages are
+// actually arriving; flip it back to true once you're confident.
 const _stderr = process.stderr.write.bind(process.stderr);
 process.stderr.write = (chunk, ...args) => {
-  const msg = typeof chunk === "string" ? chunk : chunk.toString();
-  if (["Bad MAC","Key used already","Failed to decrypt","Session error","Closing open session","Closing session:"].some(s => msg.includes(s)))
-    return true;
+  if (DEBUG_SUPPRESS_NOISY_LOGS) {
+    const msg = typeof chunk === "string" ? chunk : chunk.toString();
+    if (["Bad MAC","Key used already","Failed to decrypt","Session error","Closing open session","Closing session:"].some(s => msg.includes(s)))
+      return true;
+  }
   return _stderr(chunk, ...args);
 };
 
@@ -556,8 +629,19 @@ async function connectToWhatsApp() {
     auth: state,
     logger: pino({ level: "silent" }),
     printQRInTerminal: false,
-    getMessage: async () => undefined,
+    // FIX (#1): real getMessage backed by messageStore instead of a
+    // hardcoded `async () => undefined`. Without this, Baileys cannot
+    // satisfy session-resync retries, and outgoing messages can silently
+    // fail to land even though sendMessage() resolved and your code
+    // already logged "Sent ->".
+    getMessage: async (key) => {
+      return messageStore.get(`${key.remoteJid}:${key.id}`) || undefined;
+    },
   });
+
+  // FIX (#1): record every outgoing message so getMessage() above can
+  // actually answer retry requests for it.
+  attachMessageStore(sock);
 
   if (!sock.authState.creds.registered && !pairingRequested) {
     pairingRequested = true;
@@ -714,8 +798,16 @@ app.post("/api/admin/pair", async (req, res) => {
       auth: state,
       logger: pino({ level: "silent" }),
       printQRInTerminal: false,
-      getMessage: async () => undefined,
+      // FIX (#1): same real getMessage as connectToWhatsApp() — this path
+      // creates its own socket, so it needs the fix applied independently.
+      getMessage: async (key) => {
+        return messageStore.get(`${key.remoteJid}:${key.id}`) || undefined;
+      },
     });
+
+    // FIX (#1): attach the store to this socket too.
+    attachMessageStore(sock);
+
     sock.ev.on("creds.update", saveCreds);
     sock.ev.on("connection.update", async (update) => {
       const { connection, lastDisconnect } = update;
@@ -831,8 +923,11 @@ app.post("/api/bot/add-to-group", async (req, res) => {
     try {
       const response = await sock.groupParticipantsUpdate(groupId, [jid], "add");
       console.log("Baileys response:", JSON.stringify(response));
+      // FIX (#3): use Number() instead of string-only comparison so a
+      // numeric status code (vs a string "403") doesn't slip through as
+      // if it were a success.
       if (response && Array.isArray(response)) {
-        const restricted = response.some(i => i.status === "403" || parseInt(i.status) === 403);
+        const restricted = response.some(i => Number(i.status) === 403);
         if (restricted) return await triggerInviteFallback(member, jid, name, groupId, response, res);
       }
       const gradeInfo = member.grade    ? `\n   *Grade* : ${member.grade}`       : "";
@@ -879,7 +974,8 @@ app.post("/api/bot/add-selected-to-group", async (req, res) => {
       await saveContact(jid, member);
       try {
         const response = await sock.groupParticipantsUpdate(groupId, [jid], "add");
-        const restricted = Array.isArray(response) && response.some(i => i.status === "403" || parseInt(i.status) === 403);
+        // FIX (#3): Number() instead of string-only comparison here too.
+        const restricted = Array.isArray(response) && response.some(i => Number(i.status) === 403);
         if (restricted) throw { content: response, message: "Privacy restricted" };
         addedList.push(member);
       } catch (addErr) {
